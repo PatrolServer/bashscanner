@@ -1,0 +1,57 @@
+#!/usr/bin/env bash
+
+# PatrolServer Bash Scanner
+#
+# This is an intermediate file for calling the PatrolServer source code.
+# This is used for 2 reasons
+# 1. Automatic updates, the newest version of the code is run each time
+# 2. Security, we sign our source code and here we explicitly check the signature.
+#    In that case, no rogue individu in GitHub can let you execute something they want.
+#    Because the private key is saved on an offline computer.
+#
+# All code is found on our GitHub account and can be reviewed by anybody.
+# It is advised you check the code!
+#
+# This scanner will only get the version numbers of your installed software
+# and send them to us to check if they are the newest version.
+# This will never ever install, update something or change config or files.
+# Warn us immediatly if this is not the case.
+
+# Get the runner
+RUNNER=`mktemp`
+wget -O $RUNNER "https://raw.githubusercontent.com/PatrolServer/bashScanner/master/compiled.sh" 
+chmod +x $RUNNER
+
+# Get the signature
+SIGNATURE=`mktemp`
+wget -O $SIGNATURE "https://raw.githubusercontent.com/PatrolServer/bashScanner/master/compiled.sign" 
+
+# Public key
+PUBLIC_KEY=`mktemp`
+echo "-----BEGIN PUBLIC KEY-----" > $PUBLIC_KEY
+echo "MIICIjANBgkqhkiG9w0BAQEFAAOCAg8AMIICCgKCAgEA6thRDBr1JJRrWQkIzRdF" >> $PUBLIC_KEY
+echo "XxuPBH6ZkuAbDNxYT75pqQXMXMO3C/N2LiWwXVJTLIsuOEtegySzNc0T6JylwUXN" >> $PUBLIC_KEY
+echo "ljNHltqa5KBdAmpSGaZJ8JYwd1iNarrf1GQfEVpnvNF85EtcwKo0L5U4aelLdpaG" >> $PUBLIC_KEY
+echo "aEigyJwnk5I5Ji+kIzcMkHTiF5RzSpJcoSvbKem++x4bvIrfwfdnvEctcX8/m/PD" >> $PUBLIC_KEY
+echo "8c/hQL1OW1gjvmNiO3AlAnr41y3QBnpcchcXv05yX3VAfZhjMZdD8JS5wvke3GT7" >> $PUBLIC_KEY
+echo "Vji5ToLPfUzyvlH9tjHx4zefxIvSTIMVI2gg+bXw5VlNIWp/ST9xQGjFG1wEa+uy" >> $PUBLIC_KEY
+echo "PU3T69j0ylEA0SaTX/ZDo8qZSn8XTNdhtc0lOK7GFM+U/iZvWe+CRA41DafsUsPa" >> $PUBLIC_KEY
+echo "GkxVS84eZ/xkIMh5EBghaxfmkYN8yubK0yILr95kU/gpFjPxRimHFvIBxIAhE8Xv" >> $PUBLIC_KEY
+echo "3+QSGEt8h11WHd8I27U3egDwVsDCDtgbPedOTiW7MGoHcxtTdcl1Fpp6cLaNeJJ/" >> $PUBLIC_KEY
+echo "UPzlIqow4S6I0O7hboiB6wSDwXfKcjg4F/7JJH3TOevNK7DLZOGOxTEX7z5JRaJZ" >> $PUBLIC_KEY
+echo "m8pa1pizQ598dwailRhkbPJGzcSCawmXq6HQTyh7F5PeyolSKVKMA4mOKSJ4KLdv" >> $PUBLIC_KEY
+echo "ceos+VHmkBUcE8QrAZNFNq0CAwEAAQ==" >> $PUBLIC_KEY
+echo "-----END PUBLIC KEY-----" >> $PUBLIC_KEY
+
+# Verify the runner
+VERIFIED=`openssl dgst -sha256 -verify $PUBLIC_KEY -signature $SIGNATURE $RUNNER`
+
+if [ "$VERIFIED" != "Verified OK" ]
+then
+	echo "Verification of PatrolServer code failed, somebody tried to edit our code without proper signing"
+	exit 2;
+fi
+
+# Run the runner
+$RUNNER "$@"
+
