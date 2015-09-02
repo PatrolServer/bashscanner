@@ -28,15 +28,17 @@ The script will ask you if it should set a cronjob, this simply means your serve
 The Bash Scanner currently detects the following software for updates (keep in mind, this list is an ongoing process and more software packages will be added in the future):
 * Debian
 * Ubuntu
-* OpenSSL
-* OpenSSH
+* OpenSSL*
+* OpenSSH*
 * cPanel
-* Drupal
-* Nginx
+* Drupal*
+* Nginx*
 * Composer modules
 * Laravel
-* Apache
-* PHP
-* BIND
+* Apache*
+* PHP*
+* BIND*
+
+*: This software also returns the exploits information.
 
 <a target="_blank" href="https://patrolserver.com"><img alt="PatrolServer" width="100" src="http://i.imgur.com/UwkmawB.png"></a>
