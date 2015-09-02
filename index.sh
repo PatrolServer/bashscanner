@@ -193,8 +193,6 @@ function Hostname {
   	exit 77;
 }
 
-# TODO: cmd version done till here
-
 function GetKeySecret {
 	if [[ "$KEY" != "" ]] && [[ "$SECRET" != "" ]]
 	then
@@ -369,7 +367,9 @@ function Scan {
   	DPKG_SOFTWARE=`DpkgSoftware`
   	DRUPAL_SOFTWARE=`DrupalSoftware`
 
-  	SOFTWARE="${COMPOSER_SOFTWARE}${DPKG_SOFTWARE}${DRUPAL_SOFTWARE}"
+  	SOFTWARE="${COMPOSER_SOFTWARE}
+${DPKG_SOFTWARE}
+${DRUPAL_SOFTWARE}"
 
 	if [[ "$CMD" == "false" ]] 
 	then

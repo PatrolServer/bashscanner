@@ -142,8 +142,10 @@ function ApiServerPush {
 		NAME=`Jsonspecialchars $NAME`
 		VERSION=`echo "$LINE" | cut -f3`
 		VERSION=`Jsonspecialchars $VERSION`
+		PARENT=`echo "$LINE" | cut -f4`
+		PARENT=`Jsonspecialchars $PARENT`
 
-		JSON=`Urlencode "{\"location\": \"$LOCATION\", \"name\": \"$NAME\", \"version\": \"$VERSION\"},"`
+		JSON=`Urlencode "{\"location\": \"$LOCATION\", \"name\": \"$NAME\", \"version\": \"$VERSION\", \"parent\": \"$PARENT\"},"`
 		echo -n $JSON >> $POSTFILE
 		I=$((I+1))
 	done

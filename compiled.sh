@@ -369,8 +369,10 @@ function ApiServerPush {
 		NAME=`Jsonspecialchars $NAME`
 		VERSION=`echo "$LINE" | cut -f3`
 		VERSION=`Jsonspecialchars $VERSION`
+		PARENT=`echo "$LINE" | cut -f4`
+		PARENT=`Jsonspecialchars $PARENT`
 
-		JSON=`Urlencode "{\"location\": \"$LOCATION\", \"name\": \"$NAME\", \"version\": \"$VERSION\"},"`
+		JSON=`Urlencode "{\"location\": \"$LOCATION\", \"name\": \"$NAME\", \"version\": \"$VERSION\", \"parent\": \"$PARENT\"},"`
 		echo -n $JSON >> $POSTFILE
 		I=$((I+1))
 	done
@@ -650,12 +652,22 @@ function Args {
 #!/usr/bin/env bash
 
 function ComposerSoftware {
-    FILES=`find / -name "composer.lock" -xdev 2> /dev/null`
+    local FILES=`find / -name "composer.lock" -xdev 2> /dev/null`
 	for FILE in $FILES; do
-		NAMES=`cat $FILE | json | grep -E '^\["packages",[0-9]{1,},"name"\]' | cut -f2- | sed -e 's/^"//'  -e 's/"$//'`
-		VERSIONS=`cat $FILE | json | grep -E '^\["packages",[0-9]{1,},"version"\]' | cut -f2- | sed -e 's/^"//'  -e 's/"$//'`
-		SOFTWARE=`paste <(echo "$NAMES") <(echo "$VERSIONS")`
+		local DIR=`dirname $FILE`
+		local JSON="$DIR/composer.json"
 
+		local PARENT="Undefined"
+		if [ -f $JSON ]
+		then
+			PARENT=`cat $JSON | json | grep '^\["name"\]' | cut -f2- | sed -e 's/^"//'  -e 's/"$//'`
+		fi
+
+		echo -e "$FILE\t$PARENT\t\t"
+
+		local NAMES=`cat $FILE | json | grep -E '^\["packages",[0-9]{1,},"name"\]' | cut -f2- | sed -e 's/^"//'  -e 's/"$//'`
+		local VERSIONS=`cat $FILE | json | grep -E '^\["packages",[0-9]{1,},"version"\]' | cut -f2- | sed -e 's/^"//'  -e 's/"$//'`
+		local SOFTWARE=`paste <(echo "$NAMES") <(echo "$VERSIONS")`
 		for LINE in $SOFTWARE; do
 	   		NAME=`echo $LINE | cut -f1`
 			VERSION=`echo $LINE | cut -f2`
@@ -663,7 +675,7 @@ function ComposerSoftware {
 			NAME=`Jsonspecialchars $NAME`
 			VERSION=`Jsonspecialchars $VERSION`
 
-			echo -e "$FILE\t$NAME\t$VERSION"
+			echo -e "$FILE\t$NAME\t$VERSION\t$PARENT"
 		done
     done
 }
@@ -691,11 +703,21 @@ function DrupalSoftware {
 		# Get root path
 		local DIR=`dirname $FILE`
 		local DIR=`cd "$DIR/../"; pwd`
-		local VERSION=`cat "${DIR}/includes/bootstrap.inc" | grep "define('VERSION', '[0-9]*\.[0-9]*')" | grep -o "[0-9]*\.[0-9]*"` 
+		local VERSION_FILE="${DIR}/includes/bootstrap.inc"
+
+		local VERSION=""
+		if [ -f $VERSION_FILE ]
+		then
+			local VERSION=`cat "$VERSION_FILE" | grep "define('VERSION', '[0-9]*\.[0-9]*')" | grep -o "[0-9]*\.[0-9]*" 2> /dev/null` 
+		fi
 
 		if [ "$VERSION" == "" ]
 		then
-			local VERSION=`cat "${DIR}/modules/php/php.info" | grep "version = \"[0-9]*\.[0-9]*\"" | grep -o "[0-9]*\.[0-9]*"` 
+			local VERSION_FILE="${DIR}/modules/php/php.info"
+			if [ -f $VERSION_FILE ]
+			then
+				local VERSION=`cat "$VERSION_FILE" | grep "version = \"[0-9]*\.[0-9]*\"" | grep -o "[0-9]*\.[0-9]*"` 
+			fi
 		fi
 
 		echo -e "$DIR\tdrupal\t$VERSION"
@@ -707,7 +729,7 @@ function DrupalSoftware {
 			local NAME=`basename $MODULE` 
 			local NAME=${NAME%.*}
 
-			echo -e "$DIR\tdrupal/$NAME\t$VERSION"
+			echo -e "$DIR\tdrupal/$NAME\t$VERSION\tdrupal"
 		done
 		
     done
@@ -896,8 +918,6 @@ function Hostname {
   	exit 77;
 }
 
-# TODO: cmd version done till here
-
 function GetKeySecret {
 	if [[ "$KEY" != "" ]] && [[ "$SECRET" != "" ]]
 	then
@@ -1072,7 +1092,9 @@ function Scan {
   	DPKG_SOFTWARE=`DpkgSoftware`
   	DRUPAL_SOFTWARE=`DrupalSoftware`
 
-  	SOFTWARE="${COMPOSER_SOFTWARE}${DPKG_SOFTWARE}${DRUPAL_SOFTWARE}"
+  	SOFTWARE="${COMPOSER_SOFTWARE}
+${DPKG_SOFTWARE}
+${DRUPAL_SOFTWARE}"
 
 	if [[ "$CMD" == "false" ]] 
 	then
