@@ -141,15 +141,29 @@ function Register {
 	fi
 }
 
+function TestHostname {
+	OPEN_PORT_53=`echo "quit" | timeout 1 telnet 8.8.8.8 53 |  grep "Escape character is 2> /dev/null"`
+	if [[ "$OPEN_PORT_53" != "" ]]
+	then
+		EXTERNAL_IP=`dig +time=1 +tries=1 +retry=1 +short myip.opendns.com @resolver1.opendns.com`
+		IP=`dig @8.8.8.8 +short $HOSTNAME`
+	else
+		EXTERNAL_IP=`wget -qO- icanhazip.com`
+		IP=`host "$HOSTNAME" | cut -d' ' -f4`
+	fi
+}
+
 function Hostname {
 
 	if [[ "$HOSTNAME" == "" ]]
 	then
-		HOSTNAME=`hostname -f`
+		HOSTNAME=`hostname -f 2> /dev/null`
 	fi
-	
-	EXTERNAL_IP=`dig +time=1 +tries=1 +retry=1 +short myip.opendns.com @resolver1.opendns.com`
-	IP=`dig @8.8.8.8 +short $HOSTNAME`
+
+	if [[ "$HOSTNAME" != "" ]]
+	then
+		TestHostname
+	fi
 	
 	if [[ "$CMD" != "false" ]] 
 	then
@@ -181,7 +195,7 @@ function Hostname {
 			echo "";
 		fi
 
-		IP=`dig @8.8.8.8 +short $HOSTNAME`
+		TestHostname
 		
 		if [[ "$IP" != "" ]] && [ $IP == $EXTERNAL_IP ]
 		then 
