@@ -24,4 +24,17 @@ After an initial scan, you will be asked to create an account on the PatrolServe
 ### Continuous scanning
 The script will ask you if it should set a cronjob, this simply means your server software will be in sync for **daily scans**. And you will be reported by email when your current software becomes outdated.
 
+## Supported software
+* Debian
+* Ubuntu
+* OpenSSL
+* OpenSSH
+* cPanel
+* Drupal
+* Nginx
+* Composer modules
+* Laravel
+* Apache
+* PHP
+
 <a target="_blank" href="https://patrolserver.com"><img alt="PatrolServer" width="100" src="http://i.imgur.com/UwkmawB.png"></a>
