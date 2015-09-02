@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 
-MY_HOME="demo.patrolserver.com"
+MY_HOME="https://demo.patrolserver.com"
 
 #!/usr/bin/env bash
 
@@ -758,9 +758,9 @@ function Start {
 		echo ""
 	fi
 
+	DetermineHostname
 	if [ "$KEY" == "" ] || [ "$SECRET" == "" ]
 	then	
-		DetermineHostname
 		Account
 	fi
 
@@ -958,7 +958,7 @@ function DetermineHostname {
 
 	Hostname
 
-	if [ "$USER" == "" ] || [ "$PASSWORD" == "" ]
+	if [ "$USER" == "" ] && [ "$PASSWORD" == "" ] && [ "$KEY" == "" ] && [ "$SECRET" == "" ]
 	then
 		# Check if the host is already in our DB
 		# Please note! You can remove this check, but our policy doesn't change.
