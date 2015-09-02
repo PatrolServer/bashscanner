@@ -25,6 +25,7 @@ After an initial scan, you will be asked to create an account on the PatrolServe
 The script will ask you if it should set a cronjob, this simply means your server software will be in sync for **daily scans**. And you will be reported by email when your current software becomes outdated.
 
 ## Supported software
+The Bash Scanner currently detects the following software for updates (keep in mind, this list is an ongoing process and more software packages will be added in the future):
 * Debian
 * Ubuntu
 * OpenSSL
@@ -36,5 +37,6 @@ The script will ask you if it should set a cronjob, this simply means your serve
 * Laravel
 * Apache
 * PHP
+* BIND
 
 <a target="_blank" href="https://patrolserver.com"><img alt="PatrolServer" width="100" src="http://i.imgur.com/UwkmawB.png"></a>
