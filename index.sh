@@ -589,12 +589,11 @@ function Cronjob {
 
 	if [ $YN == "n" ]
 	then
-		if [[ "$EMAIL" == tmp\+* ]]
+		if [[ "$EMAIL" == tmp\-* ]]
 		then
 			ApiUserRemove $KEY $SECRET
 		fi
 
-		echo "> Have a nice day!"
 	else
 
 		if [[ "$EMAIL" == tmp\+* ]]
