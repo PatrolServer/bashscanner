@@ -1,7 +1,7 @@
 # Bash Scanner
 <a target="_blank" href="http://opensource.org/licenses/GPL-3.0"><img alt="GPL v3" src="https://camo.githubusercontent.com/7aa49bcd4f4eb9a53e06b1607e5b9c5709c5d118/68747470733a2f2f706f7365722e707567782e6f72672f6c6561726e696e676c6f636b65722f6c6561726e696e676c6f636b65722f6c6963656e73652e737667"></img></a>
 
-**The Bash Scanner will become active and operational between now and two days. So check back soon!**
+#### This version is currently not a stable build and is temporary for internal purposes. A stable release will follow anytime, so check back soon! If you want to scan your server, you may always use the dashboard app at demo.patrolserver.com
 
 Bash Scanner is a fast and reliable way to scan your server for outdated software and potential exploits.
 
@@ -42,3 +42,5 @@ The Bash Scanner currently detects the following software for updates (keep in m
 *: This software also returns the exploits information.
 
 <a target="_blank" href="https://patrolserver.com"><img alt="PatrolServer" width="100" src="http://i.imgur.com/UwkmawB.png"></a>
+
+[![Analytics](https://ga-beacon.appspot.com/UA-65036233-1/PatrolServer/bash-scanner?pixel)](https://github.com/igrigorik/ga-beacon)
