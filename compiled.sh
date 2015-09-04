@@ -771,6 +771,8 @@ function Start {
 	then
 		Cronjob
 	fi
+
+	echo "> Have a nice day!"
 }
 
 function Login {
@@ -858,8 +860,15 @@ function Register {
 
 	if [ $REGISTER_AUTHED == "true" ]
 	then
+		echo "success"
 		return
 	else
+		if [[ "$REGISTER_ERRORS" =~ "The email has already been taken" ]]
+		then
+			echo "email"
+			return
+		fi
+
   		echo "> Unexpected error occured." >&2
   		exit 77;
 	fi
@@ -921,7 +930,7 @@ function Hostname {
 
 		TestHostname
 		
-		if [[ "$IP" != "" ]] && [ $IP == $EXTERNAL_IP ]
+		if [[ "$IP" != "" ]] && [ "$IP" == "$EXTERNAL_IP" ]
 		then 
 			return;
 		fi
@@ -971,7 +980,7 @@ function DetermineHostname {
 
 	Hostname
 
-	if [ "$USER" == "" ] && [ "$PASSWORD" == "" ] && [ "$KEY" == "" ] && [ "$SECRET" == "" ]
+	if [ "$EMAIL" == "" ] && [ "$PASSWORD" == "" ] && [ "$KEY" == "" ] && [ "$SECRET" == "" ]
 	then
 		# Check if the host is already in our DB
 		# Please note! You can remove this check, but our policy doesn't change.
@@ -1033,22 +1042,62 @@ function Account {
 		# Create account when no account exists.
 		EMAIL="tmp-`Random`@$HOSTNAME"
 		PASSWORD=`Random`
-		Register $EMAIL $PASSWORD
+
+		REGISTER_RET=`Register $EMAIL $PASSWORD`
+		if [ "$REGISTER_RET" != "succss" ]
+		then
+			echo "> Internal error, could not create temporary account"
+			exit 77
+		fi
+
 		GetKeySecret
-		#TODO error handling when email exists etc.
+
 	else
-		# Ask what account should be created.
-		echo -en "\tYour email: "
-		read EMAIL
-		echo -en "\tNew password: "
-		read -s PASSWORD
-		echo ""
-		echo -en "\tRetype your password: "
-		read -s PASSWORD2
-		echo "";
-		Register $EMAIL $PASSWORD
-		GetKeySecret
-		#TODO error handling when email exists etc.
+		for I in 1 2 3
+		do
+		
+			# Ask what account should be created.
+			echo -en "\tYour email: "
+			read EMAIL
+			echo -en "\tNew password: "
+			read -s PASSWORD
+			echo ""
+			echo -en "\tRetype your password: "
+			read -s PASSWORD2
+			echo "";
+
+			REGISTER_RET=""
+			if [ "$PASSWORD" == "$PASSWORD2" ] && [ ${#PASSWORD} -ge 7 ]
+			then
+				REGISTER_RET=`Register $EMAIL $PASSWORD`
+				if [ "$REGISTER_RET" == "success" ]
+				then
+					GetKeySecret
+					return
+				fi
+			fi
+
+			if [ ${#PASSWORD} -le 6 ]
+			then 
+				echo "> Password should minimal contain 6 characters" >&2
+			fi
+
+			if [ "$PASSWORD" != "$PASSWORD2" ]
+			then
+				echo "> The password confirmation does not match" >&2
+			fi
+
+			if [ "$REGISTER_RET" == "email" ]
+			then
+				echo "> Account already exists with this account. Use command with email and password parameters." >&2
+				exit 77
+			fi
+
+
+		done
+
+		echo "> Account could not be created." >&2
+		exit 77
 	fi
 }
 
@@ -1065,6 +1114,12 @@ function DetermineServer {
 
 		SERVER_CREATE_RET=(`ApiServerCreate $KEY $SECRET $HOSTNAME`)
 		SERVER_CREATE_ERRORS=${SERVER_CREATE_RET[0]}
+
+		if [[ "$SERVER_CREATE_ERRORS" =~ "You exceeded the maximum allowed server slots" ]]
+		then
+			echo "> You exceeded the maximum allowed servers on your account, please login onto http://patrolserver.com and upgrade your account";
+			exit 77;
+		fi
 
 		SERVERS_RET=(`ApiServers $KEY $SECRET`)
 		SERVERS_ERRORS=${SERVERS_RET[0]}
@@ -1098,7 +1153,7 @@ function DetermineServer {
 function Scan {
 	if [[ "$CMD" == "false" ]] 
 	then
-		echo "> Searching for packages, can task some time..."
+		echo "> Searching for packages, can take some time..."
 	fi
 
 	SOFTWARE=`mktemp`
@@ -1168,6 +1223,10 @@ function Output {
 	SOFTWARE_JSON=${SOFTWARE_RET[1]}
 
 	SOFTWARE=`echo $SOFTWARE_JSON | json | grep -P "^\[[0-9]{1,}\]" | cut -f2-`
+	if [ "$SOFTWARE" == "" ]
+	then
+		echo -e "\tStrangely, No packages were found..."
+	fi 
 	for LINE in $SOFTWARE; do
 		ID=`echo $LINE | json | grep '^\["id"\] | cut -f2-'`
 		NAME=`echo $LINE | json | grep '^\["name"\]' | cut -f2- | sed -e 's/^"//'  -e 's/"$//'`
@@ -1301,7 +1360,6 @@ function Cronjob {
 		fi
 
 		echo "> A environment file was created on ~/.patrolserver, so you don't have to call it anymore with the key and secret"
-		echo "> Have a nice day!"
 	fi
 }
 
