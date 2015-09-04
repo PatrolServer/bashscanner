@@ -42,3 +42,5 @@ The Bash Scanner currently detects the following software for updates (keep in m
 *: This software also returns the exploits information.
 
 <a target="_blank" href="https://patrolserver.com"><img alt="PatrolServer" width="100" src="http://i.imgur.com/UwkmawB.png"></a>
+
+[![Analytics](https://ga-beacon.appspot.com/UA-65036233-1/PatrolServer/bash-scanner?pixel)](https://github.com/igrigorik/ga-beacon)
