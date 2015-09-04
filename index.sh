@@ -321,7 +321,7 @@ function Account {
 		PASSWORD=`Random`
 
 		REGISTER_RET=`Register $EMAIL $PASSWORD`
-		if [ "$REGISTER_RET" != "succss" ]
+		if [ "$REGISTER_RET" != "success" ]
 		then
 			echo "> Internal error, could not create temporary account"
 			exit 77
