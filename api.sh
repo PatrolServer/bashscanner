@@ -252,7 +252,7 @@ function ApiServerIsScanning {
 
 	if [ "$OUTPUT" == "" ]
 	then
-		echo "> patrolserver.com is not reachable, contact us (13	)" >&2
+		echo "> patrolserver.com is not reachable, contact us (13)" >&2
 		exit 77
 	fi
 
@@ -272,7 +272,7 @@ function ApiUserChange {
 
 	if [ "$OUTPUT" == "" ]
 	then
-		echo "> patrolserver.com is not reachable, contact us (13	)" >&2
+		echo "> patrolserver.com is not reachable, contact us (14)" >&2
 		exit 77
 	fi
 
@@ -281,6 +281,25 @@ function ApiUserChange {
 
 	echo ${ERRORS:-false}
 	echo ${SUCCESS:-false}
+}
+
+function ApiUserRemove {
+	local KEY=`Urlencode $1`
+	local SECRET=`Urlencode $2`
+
+	local OUTPUT=`wget -t2 -T2 -qO- "${MY_HOME}/extern/api/user/delete?key=$KEY&secret=$SECRET" --post-data "not=used"`
+
+	if [ "$OUTPUT" == "" ]
+	then
+		echo "> patrolserver.com is not reachable, contact us (15)" >&2
+		exit 77
+	fi
+
+	#local ERRORS=`echo "$OUTPUT" | json | grep '^\["errors"\]' | cut -f2-`
+	#local SUCCESS=`echo "$OUTPUT" | json | grep '^\["success"\]' | cut -f2-`
+
+	#echo ${ERRORS:-false}
+	#echo ${SUCCESS:-false}
 }
 
 function Urlencode {
