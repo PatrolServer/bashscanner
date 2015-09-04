@@ -596,18 +596,25 @@ function Cronjob {
 
 	else
 
-		if [[ "$EMAIL" == tmp\+* ]]
+		if [[ "$EMAIL" == tmp\-* ]]
 		then
-			echo "> What is your email address to send reports to? "
-			read EMAIL
+			echo -n "> What is your email address to send reports to? "
+			read REAL_EMAIL
+			echo ""
 
-			CHANGE_EMAIL_RET=`ApiUserChange $KEY $SECRET $EMAIL`
+			CHANGE_EMAIL_RET=(`ApiUserChange $KEY $SECRET $REAL_EMAIL`)
 			CHANGE_EMAIL_ERRORS=${CHANGE_EMAIL_RET[0]}
 			CHANGE_EMAIL_SUCCESS=${CHANGE_EMAIL_RET[1]}
 
 			if [ "$CHANGE_EMAIL_SUCCESS" == "false" ]
 			then
-				echo $CHANGE_EMAIL_ERRORS >&2
+			    if [[ $CHANGE_EMAIL_ERRORS =~ "The email has already been taken." ]] 
+			    then
+			        echo "> There is already an account with this emailadress, use this tool with email and password parameters." >&2
+				    exit 77
+			    fi
+			    
+				echo "> Internal error when changing username" >&2
 				exit 77
 			fi
 		fi
@@ -628,7 +635,7 @@ function Cronjob {
 
 	    echo "> cronjob was set."
 
-	    if [[ "$EMAIL" == tmp\+* ]]
+	    if [[ "$EMAIL" == tmp\-* ]]
 		then
 			echo "> Your login on patrolserver.com:"
 			echo -e "\tlogin: $REAL_EMAIL"
