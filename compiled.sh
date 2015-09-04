@@ -360,25 +360,20 @@ function ApiServerPush {
 	local BUCKET=`Urlencode $4`
 	local EXPIRE="129600"
 
-	I=0
-	echo -n "expire=$EXPIRE&software=[" > $POSTFILE
-	for LINE in "${@:5}"; do
-		LOCATION=`echo "$LINE" | cut -f1`
-		LOCATION=`Jsonspecialchars $LOCATION`
-		NAME=`echo "$LINE" | cut -f2`
-		NAME=`Jsonspecialchars $NAME`
-		VERSION=`echo "$LINE" | cut -f3`
-		VERSION=`Jsonspecialchars $VERSION`
-		PARENT=`echo "$LINE" | cut -f4`
-		PARENT=`Jsonspecialchars $PARENT`
+	echo -n "expire=$EXPIRE&software=" > $POSTFILE
+	cat $SOFTWARE | sort | uniq | awk 'BEGIN { RS="\n"; FS="\t"; print "["; prevLocation="---"; prevName="---"; prevVersion="---"; prevParent="---";} 
+		{ 
+			if($1 == prevLocation){ $1=""; } else { prevLocation = $1; $1 = "\"l\":\""$1"\"," }; 
+			if($2 == prevParent){ $2=""; } else { prevParent = $2; $2 = "\"p\":\""$2"\"," }; 
+			if($3 == prevName){ $3=""; } else { prevName = $3; $3 = "\"n\":\""$3"\"," }; 
+			if($4 == prevVersion){ $4=""; } else { prevVersion = $4; $4 = "\"v\":\""$4"\"," }; 
+			line = $1$2$3$4; 
+			line = substr(line, 0, length(line)-1)
+			print "{"line"},"; 
+		} 
+		END { print "{}]"; }' >> $POSTFILE
 
-		JSON=`Urlencode "{\"location\": \"$LOCATION\", \"name\": \"$NAME\", \"version\": \"$VERSION\", \"parent\": \"$PARENT\"},"`
-		echo -n $JSON >> $POSTFILE
-		I=$((I+1))
-	done
-	echo -n '{}]' >> $POSTFILE
-
-	local OUTPUT=`wget -t2 -T2 -qO- "${MY_HOME}/extern/api/servers/${SERVER_ID}/software_bucket/$BUCKET?key=$KEY&secret=$SECRET" --post-file $POSTFILE`
+	local OUTPUT=`wget -t2 -T2 -qO- "${MY_HOME}/extern/api/servers/${SERVER_ID}/software_bucket/$BUCKET?key=$KEY&secret=$SECRET&scope=silent" --post-file $POSTFILE`
 
 	if [ "$OUTPUT" == "" ]
 	then
@@ -541,6 +536,7 @@ function EnvFile {
     if [ -f ~/.patrolserver/env ];
     then
         source ~/.patrolserver/env
+        LOCATE="$HOME/.patrolserver/locate.db"
     fi
 }
 
@@ -652,8 +648,8 @@ function Args {
 #!/usr/bin/env bash
 
 function ComposerSoftware {
-    local FILES=`find / -name "composer.lock" -xdev 2> /dev/null`
-	for FILE in $FILES; do
+    local FILES=`locate --database=$LOCATE "composer.lock" 2> /dev/null`
+ 	for FILE in $FILES; do
 		local DIR=`dirname $FILE`
 		local JSON="$DIR/composer.json"
 
@@ -663,41 +659,43 @@ function ComposerSoftware {
 			PARENT=`cat $JSON | json | grep '^\["name"\]' | cut -f2- | sed -e 's/^"//'  -e 's/"$//'`
 		fi
 
-		echo -e "$FILE\t$PARENT\t\t"
+ 		echo -e "$FILE\t\t$PARENT\t" >> $SOFTWARE
 
-		local NAMES=`cat $FILE | json | grep -E '^\["packages",[0-9]{1,},"name"\]' | cut -f2- | sed -e 's/^"//'  -e 's/"$//'`
-		local VERSIONS=`cat $FILE | json | grep -E '^\["packages",[0-9]{1,},"version"\]' | cut -f2- | sed -e 's/^"//'  -e 's/"$//'`
-		local SOFTWARE=`paste <(echo "$NAMES") <(echo "$VERSIONS")`
-		for LINE in $SOFTWARE; do
+ 		local JSON_DATA=`cat $FILE | json`
+ 		local NAMES=`echo "$JSON_DATA" | grep -E '^\["packages",[0-9]{1,},"name"\]' | cut -f2- | sed -e 's/^"//'  -e 's/"$//'`
+ 		local VERSIONS=`echo "$JSON_DATA" | grep -E '^\["packages",[0-9]{1,},"version"\]' | cut -f2- | sed -e 's/^"//'  -e 's/"$//'`
+		local COMPSERSOFTWARE=`paste <(echo "$NAMES") <(echo "$VERSIONS")`
+		for LINE in $COMPSERSOFTWARE; do
 	   		NAME=`echo $LINE | cut -f1`
 			VERSION=`echo $LINE | cut -f2`
 
 			NAME=`Jsonspecialchars $NAME`
 			VERSION=`Jsonspecialchars $VERSION`
 
-			echo -e "$FILE\t$NAME\t$VERSION\t$PARENT"
+			echo -e "$FILE\t$PARENT\t$NAME\t$VERSION" >> $SOFTWARE
 		done
     done
 }
  #!/usr/bin/env bash
 
 function DpkgSoftware {
-   	local SOFTWARE=`dpkg -l | grep '^i' | grep -v "lib" | tr -s ' ' | sed 's/ /\t/g'| cut -f2,3`
+   	local SUBSOFTWARE=`dpkg -l | grep '^i' | grep -v "lib" | tr -s ' ' | sed 's/ /\t/g'| cut -f2,3`
 
-   	for LINE in $SOFTWARE; do
+   	for LINE in $SUBSOFTWARE; do
    		NAME=`echo $LINE | cut -f1`
 		VERSION=`echo $LINE | cut -f2`
 
 		NAME=`Jsonspecialchars $NAME`
 		VERSION=`Jsonspecialchars $VERSION`
 
-		echo -e "/\t$NAME\t$VERSION"
+		echo -e "/\t\t$NAME\t$VERSION" >> $SOFTWARE
 	done
 }
 #!/usr/bin/env bash
 
 function DrupalSoftware {
-    FILES=`find / -name "drupal.js" -xdev 2> /dev/null`
+	ALL_MODULES=`locate --database=$LOCATE "*.info" 2> /dev/null`
+    FILES=`locate --database=$LOCATE "drupal.js" 2> /dev/null`
 	for FILE in $FILES; do
 
 		# Get root path
@@ -720,16 +718,16 @@ function DrupalSoftware {
 			fi
 		fi
 
-		echo -e "$DIR\tdrupal\t$VERSION"
+		echo -e "$DIR\t\tdrupal\t$VERSION" >> $SOFTWARE
 
 		# Get modules
-		MODULES=`find "$DIR/sites/all" -name "*.info" -xdev 2> /dev/null`
+		MODULES=`echo "$ALL_MODULES" | grep "^$DIR/sites/all"`
 		for MODULE in $MODULES; do
-			local VERSION=`cat "$MODULE" | grep "version = ['\"]*[0-9a-z\.\-]*['\"]*" | grep -o "[0-9][0-9a-z\.\-]*"`
+			local VERSION=`grep "version = ['\"]*[0-9a-z\.\-]*['\"]*" "$MODULE" | grep -o "[0-9][0-9a-z\.\-]*"`
 			local NAME=`basename $MODULE` 
 			local NAME=${NAME%.*}
 
-			echo -e "$DIR\tdrupal/$NAME\t$VERSION\tdrupal"
+			echo -e "$DIR\tdrupal\tdrupal/$NAME\t$VERSION" >> $SOFTWARE
 		done
 		
     done
@@ -744,6 +742,7 @@ SECRET=""
 CMD="false"
 SERVER_ID=""
 BUCKET="BashScanner"
+LOCATE=`mktemp`
 
 function Start {
 	SetEnv
@@ -867,7 +866,7 @@ function Register {
 }
 
 function TestHostname {
-	OPEN_PORT_53=`echo "quit" | timeout 1 telnet 8.8.8.8 53 |  grep "Escape character is 2> /dev/null"`
+	OPEN_PORT_53=`echo "quit" | timeout 1 telnet 8.8.8.8 53 2> /dev/null |  grep "Escape character is"`
 	if [[ "$OPEN_PORT_53" != "" ]]
 	then
 		EXTERNAL_IP=`dig +time=1 +tries=1 +retry=1 +short myip.opendns.com @resolver1.opendns.com`
@@ -1102,13 +1101,15 @@ function Scan {
 		echo "> Searching for packages, can task some time..."
 	fi
 
-  	COMPOSER_SOFTWARE=`ComposerSoftware`
-  	DPKG_SOFTWARE=`DpkgSoftware`
-  	DRUPAL_SOFTWARE=`DrupalSoftware`
+	SOFTWARE=`mktemp`
+	
+	# Update db
+	updatedb -o "$LOCATE" -U / --require-visibility 0 2> /dev/null
 
-  	SOFTWARE="${COMPOSER_SOFTWARE}
-${DPKG_SOFTWARE}
-${DRUPAL_SOFTWARE}"
+	# Do all scanners
+	ComposerSoftware
+	DpkgSoftware
+	DrupalSoftware
 
 	if [[ "$CMD" == "false" ]] 
 	then
@@ -1278,6 +1279,7 @@ function Cronjob {
 
 		mkdir ~/.patrolserver 2> /dev/null
 	    echo -e "HOSTNAME=$HOSTNAME\nKEY=$KEY\nSECRET=$SECRET" > ~/.patrolserver/env
+	    cat $LOCATE > ~/.patrolserver/locate.db
 	    wget -O ~/.patrolserver/patrolserver "https://raw.githubusercontent.com/PatrolServer/bashScanner/master/patrolserver" 2&>1 /dev/null
 	    chmod +x ~/.patrolserver/patrolserver
 

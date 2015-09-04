@@ -19,6 +19,7 @@ SECRET=""
 CMD="false"
 SERVER_ID=""
 BUCKET="BashScanner"
+LOCATE=`mktemp`
 
 function Start {
 	SetEnv
@@ -142,7 +143,7 @@ function Register {
 }
 
 function TestHostname {
-	OPEN_PORT_53=`echo "quit" | timeout 1 telnet 8.8.8.8 53 |  grep "Escape character is 2> /dev/null"`
+	OPEN_PORT_53=`echo "quit" | timeout 1 telnet 8.8.8.8 53 2> /dev/null |  grep "Escape character is"`
 	if [[ "$OPEN_PORT_53" != "" ]]
 	then
 		EXTERNAL_IP=`dig +time=1 +tries=1 +retry=1 +short myip.opendns.com @resolver1.opendns.com`
@@ -377,13 +378,15 @@ function Scan {
 		echo "> Searching for packages, can task some time..."
 	fi
 
-  	COMPOSER_SOFTWARE=`ComposerSoftware`
-  	DPKG_SOFTWARE=`DpkgSoftware`
-  	DRUPAL_SOFTWARE=`DrupalSoftware`
+	SOFTWARE=`mktemp`
+	
+	# Update db
+	updatedb -o "$LOCATE" -U / --require-visibility 0 2> /dev/null
 
-  	SOFTWARE="${COMPOSER_SOFTWARE}
-${DPKG_SOFTWARE}
-${DRUPAL_SOFTWARE}"
+	# Do all scanners
+	ComposerSoftware
+	DpkgSoftware
+	DrupalSoftware
 
 	if [[ "$CMD" == "false" ]] 
 	then
@@ -553,6 +556,7 @@ function Cronjob {
 
 		mkdir ~/.patrolserver 2> /dev/null
 	    echo -e "HOSTNAME=$HOSTNAME\nKEY=$KEY\nSECRET=$SECRET" > ~/.patrolserver/env
+	    cat $LOCATE > ~/.patrolserver/locate.db
 	    wget -O ~/.patrolserver/patrolserver "https://raw.githubusercontent.com/PatrolServer/bashScanner/master/patrolserver" 2&>1 /dev/null
 	    chmod +x ~/.patrolserver/patrolserver
 

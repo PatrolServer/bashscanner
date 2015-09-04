@@ -133,25 +133,20 @@ function ApiServerPush {
 	local BUCKET=`Urlencode $4`
 	local EXPIRE="129600"
 
-	I=0
-	echo -n "expire=$EXPIRE&software=[" > $POSTFILE
-	for LINE in "${@:5}"; do
-		LOCATION=`echo "$LINE" | cut -f1`
-		LOCATION=`Jsonspecialchars $LOCATION`
-		NAME=`echo "$LINE" | cut -f2`
-		NAME=`Jsonspecialchars $NAME`
-		VERSION=`echo "$LINE" | cut -f3`
-		VERSION=`Jsonspecialchars $VERSION`
-		PARENT=`echo "$LINE" | cut -f4`
-		PARENT=`Jsonspecialchars $PARENT`
+	echo -n "expire=$EXPIRE&software=" > $POSTFILE
+	cat $SOFTWARE | sort | uniq | awk 'BEGIN { RS="\n"; FS="\t"; print "["; prevLocation="---"; prevName="---"; prevVersion="---"; prevParent="---";} 
+		{ 
+			if($1 == prevLocation){ $1=""; } else { prevLocation = $1; $1 = "\"l\":\""$1"\"," }; 
+			if($2 == prevParent){ $2=""; } else { prevParent = $2; $2 = "\"p\":\""$2"\"," }; 
+			if($3 == prevName){ $3=""; } else { prevName = $3; $3 = "\"n\":\""$3"\"," }; 
+			if($4 == prevVersion){ $4=""; } else { prevVersion = $4; $4 = "\"v\":\""$4"\"," }; 
+			line = $1$2$3$4; 
+			line = substr(line, 0, length(line)-1)
+			print "{"line"},"; 
+		} 
+		END { print "{}]"; }' >> $POSTFILE
 
-		JSON=`Urlencode "{\"location\": \"$LOCATION\", \"name\": \"$NAME\", \"version\": \"$VERSION\", \"parent\": \"$PARENT\"},"`
-		echo -n $JSON >> $POSTFILE
-		I=$((I+1))
-	done
-	echo -n '{}]' >> $POSTFILE
-
-	local OUTPUT=`wget -t2 -T2 -qO- "${MY_HOME}/extern/api/servers/${SERVER_ID}/software_bucket/$BUCKET?key=$KEY&secret=$SECRET" --post-file $POSTFILE`
+	local OUTPUT=`wget -t2 -T2 -qO- "${MY_HOME}/extern/api/servers/${SERVER_ID}/software_bucket/$BUCKET?key=$KEY&secret=$SECRET&scope=silent" --post-file $POSTFILE`
 
 	if [ "$OUTPUT" == "" ]
 	then

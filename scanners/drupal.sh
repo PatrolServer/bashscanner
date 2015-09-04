@@ -1,7 +1,8 @@
 #!/usr/bin/env bash
 
 function DrupalSoftware {
-    FILES=`find / -name "drupal.js" -xdev 2> /dev/null`
+	ALL_MODULES=`locate --database=$LOCATE "*.info" 2> /dev/null`
+    FILES=`locate --database=$LOCATE "drupal.js" 2> /dev/null`
 	for FILE in $FILES; do
 
 		# Get root path
@@ -24,16 +25,16 @@ function DrupalSoftware {
 			fi
 		fi
 
-		echo -e "$DIR\tdrupal\t$VERSION"
+		echo -e "$DIR\t\tdrupal\t$VERSION" >> $SOFTWARE
 
 		# Get modules
-		MODULES=`find "$DIR/sites/all" -name "*.info" -xdev 2> /dev/null`
+		MODULES=`echo "$ALL_MODULES" | grep "^$DIR/sites/all"`
 		for MODULE in $MODULES; do
-			local VERSION=`cat "$MODULE" | grep "version = ['\"]*[0-9a-z\.\-]*['\"]*" | grep -o "[0-9][0-9a-z\.\-]*"`
+			local VERSION=`grep "version = ['\"]*[0-9a-z\.\-]*['\"]*" "$MODULE" | grep -o "[0-9][0-9a-z\.\-]*"`
 			local NAME=`basename $MODULE` 
 			local NAME=${NAME%.*}
 
-			echo -e "$DIR\tdrupal/$NAME\t$VERSION\tdrupal"
+			echo -e "$DIR\tdrupal\tdrupal/$NAME\t$VERSION" >> $SOFTWARE
 		done
 		
     done

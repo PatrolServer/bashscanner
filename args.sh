@@ -4,6 +4,7 @@ function EnvFile {
     if [ -f ~/.patrolserver/env ];
     then
         source ~/.patrolserver/env
+        LOCATE="$HOME/.patrolserver/locate.db"
     fi
 }
 
