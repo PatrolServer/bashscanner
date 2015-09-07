@@ -361,17 +361,22 @@ function ApiServerPush {
 	local EXPIRE="129600"
 
 	echo -n "expire=$EXPIRE&software=" > $POSTFILE
-	cat $SOFTWARE | sort | uniq | awk 'BEGIN { RS="\n"; FS="\t"; print "["; prevLocation="---"; prevName="---"; prevVersion="---"; prevParent="---";} 
+
+	SOFTWARE=`cat $SOFTWARE | sort | uniq | awk 'BEGIN { RS="\n"; FS="\t"; print "["; prevLocation="---"; prevName="---"; prevVersion="---"; prevParent="---";} 
 		{ 
 			if($1 == prevLocation){ $1=""; } else { prevLocation = $1; $1 = "\"l\":\""$1"\"," }; 
 			if($2 == prevParent){ $2=""; } else { prevParent = $2; $2 = "\"p\":\""$2"\"," }; 
 			if($3 == prevName){ $3=""; } else { prevName = $3; $3 = "\"n\":\""$3"\"," }; 
 			if($4 == prevVersion){ $4=""; } else { prevVersion = $4; $4 = "\"v\":\""$4"\"," }; 
 			line = $1$2$3$4; 
-			line = substr(line, 0, length(line)-1)
+			line = substr(line, 0, length(line))
 			print "{"line"},"; 
 		} 
-		END { print "{}]"; }' >> $POSTFILE
+		END { print "{}]"; }' | tr -d '\n'`
+	SOFTWARE=`Urlencode "$SOFTWARE"`
+
+	echo "$SOFTWARE" >> $POSTFILE
+
 
 	local OUTPUT=`wget -t2 -T6 -qO- "${MY_HOME}/extern/api/servers/${SERVER_ID}/software_bucket/$BUCKET?key=$KEY&secret=$SECRET&scope=silent" --post-file $POSTFILE`
 
