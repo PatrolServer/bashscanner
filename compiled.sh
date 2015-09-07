@@ -1298,8 +1298,8 @@ function Output {
 		# Check exploits
 		COUNT_EXPLOITS=0
 		for EXPLOIT in $EXPLOITS; do
-			IS_BIGGER=`echo "$EXPLOIT>=5.0" | bc`
-			if [ "$IS_BIGGER" == "1" ]
+			IS_BIGGER=`echo "$EXPLOIT" | grep "^[5-9]"`
+			if [[ "$IS_BIGGER" != "" ]]
 			then
 				COUNT_EXPLOITS=$((COUNT_EXPLOITS+1)) 
 			fi
