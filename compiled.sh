@@ -1247,14 +1247,16 @@ function Output {
 		echo -e "\tStrangely, No packages were found..."
 	fi 
 	for LINE in $SOFTWARE; do
-		ID=`echo $LINE | json | grep '^\["id"\] | cut -f2-'`
-		NAME=`echo $LINE | json | grep '^\["name"\]' | cut -f2- | sed -e 's/^"//'  -e 's/"$//'`
-		VERSION=`echo $LINE | json | grep '^\["version"\]' | cut -f2- | sed -e 's/^"//'  -e 's/"$//'`
-		VERSIONS=`echo $LINE | json | grep '^\["versions"\]' | cut -f2-`
-		NEW_VERSION=`echo $LINE | json | grep '^\["newest_bugfix_release"\]' | cut -f2- | sed -e 's/^"//'  -e 's/"$//'`
-		SUPPORTED=`echo $LINE | json | grep '^\["supported"\]' | cut -f2- | sed -e 's/^"//'  -e 's/"$//'`
-		EXPLOITS=`echo $LINE | json | grep '^\["exploits"\]' | cut -f2- | json | grep '^\[[0-9]*,"risk"\]' | cut -f2-`
-		
+		LINE=`echo $LINE | json`
+
+		ID=`echo "$LINE" | grep '^\["id"\] | cut -f2-'`
+		NAME=`echo "$LINE" | grep '^\["name"\]' | cut -f2- | sed -e 's/^"//'  -e 's/"$//'`
+		VERSION=`echo "$LINE" | grep '^\["version"\]' | cut -f2- | sed -e 's/^"//'  -e 's/"$//'`
+		VERSIONS=`echo "$LINE" | grep '^\["versions"\]' | cut -f2-`
+		NEW_VERSION=`echo "$LINE" | grep '^\["newest_bugfix_release"\]' | cut -f2- | sed -e 's/^"//'  -e 's/"$//'`
+		SUPPORTED=`echo "$LINE" | grep '^\["supported"\]' | cut -f2- | sed -e 's/^"//'  -e 's/"$//'`
+		EXPLOITS=`echo "$LINE" | grep '^\["exploits"\]' | cut -f2- | json | grep '^\[[0-9]*,"risk"\]' | cut -f2-`
+
 		if [ "$VERSIONS" != "" ]
 		then
 			VERSION=`echo $VERSIONS | json | grep '^\[0]' | cut -f2- | sed -e 's/^"//'  -e 's/"$//'`
