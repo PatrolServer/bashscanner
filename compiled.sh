@@ -234,7 +234,7 @@ function ApiUserRegister {
 	local EMAIL=`Urlencode $1`
 	local PASSWORD=`Urlencode $2`
 
-	local OUTPUT=`wget -t2 -T2 --keep-session-cookies --save-cookies $COOKIES -qO- "${MY_HOME}/api/user/register" --post-data "email=$EMAIL&password=$PASSWORD&password_confirmation=$PASSWORD"`
+	local OUTPUT=`wget -t2 -T6 --keep-session-cookies --save-cookies $COOKIES -qO- "${MY_HOME}/api/user/register" --post-data "email=$EMAIL&password=$PASSWORD&password_confirmation=$PASSWORD"`
 
 	if [ "$OUTPUT" == "" ]
 	then
@@ -255,7 +255,7 @@ function ApiUserLogin {
 	local EMAIL=`Urlencode $1`
 	local PASSWORD=`Urlencode $2`
 
-	local OUTPUT=`wget -t2 -T4 --keep-session-cookies --save-cookies $COOKIES -qO- "${MY_HOME}/api/user/login" --post-data "email=$EMAIL&password=$PASSWORD"`
+	local OUTPUT=`wget -t2 -T6 --keep-session-cookies --save-cookies $COOKIES -qO- "${MY_HOME}/api/user/login" --post-data "email=$EMAIL&password=$PASSWORD"`
 
 	if [ "$OUTPUT" == "" ]
 	then
@@ -279,7 +279,7 @@ function ApiUserLogin {
 function ApiServerExists {
 	local HOST=`Urlencode $1`
 
-	local OUTPUT=`wget -t2 -T2 -qO- "${MY_HOME}/api/server/exists?host=$HOST"`
+	local OUTPUT=`wget -t2 -T6 -qO- "${MY_HOME}/api/server/exists?host=$HOST"`
 
 	if [ "$OUTPUT" == "" ]
 	then
@@ -301,7 +301,7 @@ function ApiServerCreate {
 	local SECRET=`Urlencode $2`
 	local HOSTNAME=`Urlencode $3`
 	
-	local OUTPUT=`wget -t2 -T2 -qO- "${MY_HOME}/extern/api/servers?key=$KEY&secret=$SECRET" --post-data "domain=$HOSTNAME"`
+	local OUTPUT=`wget -t2 -T6 -qO- "${MY_HOME}/extern/api/servers?key=$KEY&secret=$SECRET" --post-data "domain=$HOSTNAME"`
 
 	if [ "$OUTPUT" == "" ]
 	then
@@ -319,7 +319,7 @@ function ApiServerCreate {
 function ApiServerToken {
 	local HOSTNAME=`Urlencode $1`
 	
-	local OUTPUT=`wget -t2 -T2 -qO- "${MY_HOME}/extern/api/request_verification_token?domain=$HOSTNAME"`
+	local OUTPUT=`wget -t2 -T6 -qO- "${MY_HOME}/extern/api/request_verification_token?domain=$HOSTNAME"`
 
 	if [ "$OUTPUT" == "" ]
 	then
@@ -340,7 +340,7 @@ function ApiVerifyServer {
 	local SERVER_ID=`Urlencode $3`
 	local TOKEN=`Urlencode $4`
 	
-	local OUTPUT=`wget -t2 -T2 -qO- "${MY_HOME}/extern/api/servers/${SERVER_ID}/verify?key=$KEY&secret=$SECRET" --post-data "token=$TOKEN"`
+	local OUTPUT=`wget -t2 -T6 -qO- "${MY_HOME}/extern/api/servers/${SERVER_ID}/verify?key=$KEY&secret=$SECRET" --post-data "token=$TOKEN"`
 
 	if [ "$OUTPUT" == "" ]
 	then
@@ -373,7 +373,7 @@ function ApiServerPush {
 		} 
 		END { print "{}]"; }' >> $POSTFILE
 
-	local OUTPUT=`wget -t2 -T2 -qO- "${MY_HOME}/extern/api/servers/${SERVER_ID}/software_bucket/$BUCKET?key=$KEY&secret=$SECRET&scope=silent" --post-file $POSTFILE`
+	local OUTPUT=`wget -t2 -T6 -qO- "${MY_HOME}/extern/api/servers/${SERVER_ID}/software_bucket/$BUCKET?key=$KEY&secret=$SECRET&scope=silent" --post-file $POSTFILE`
 
 	if [ "$OUTPUT" == "" ]
 	then
@@ -388,7 +388,7 @@ function ApiServerPush {
 
 function ApiKeySecret {
 
-	local OUTPUT=`wget -t2 -T2 --load-cookies $COOKIES -qO- "${MY_HOME}/api/user/api_credentials"`
+	local OUTPUT=`wget -t2 -T6 --load-cookies $COOKIES -qO- "${MY_HOME}/api/user/api_credentials"`
 
 	if [ "$OUTPUT" == "" ]
 	then
@@ -404,7 +404,7 @@ function ApiKeySecret {
 }
 
 function ApiCreateKeySecret {
-	local OUTPUT=`wget -t2 -T2 --load-cookies $COOKIES -qO- "${MY_HOME}/api/user/api_credentials" --post-data "not=used"`
+	local OUTPUT=`wget -t2 -T6 --load-cookies $COOKIES -qO- "${MY_HOME}/api/user/api_credentials" --post-data "not=used"`
 
 	if [ "$OUTPUT" == "" ]
 	then
@@ -417,7 +417,7 @@ function ApiServers {
 	local KEY=`Urlencode $1`
 	local SECRET=`Urlencode $2`
 
-	local OUTPUT=`wget -t2 -T2 -qO- "${MY_HOME}/extern/api/servers?key=$KEY&secret=$SECRET"`
+	local OUTPUT=`wget -t2 -T6 -qO- "${MY_HOME}/extern/api/servers?key=$KEY&secret=$SECRET"`
 
 	if [ "$OUTPUT" == "" ]
 	then
@@ -437,7 +437,7 @@ function ApiSoftware {
 	local SECRET=`Urlencode $2`
 	local SERVER_ID=`Urlencode $3`
 
-	local OUTPUT=`wget -t2 -T2 -qO- "${MY_HOME}/extern/api/servers/$SERVER_ID/software?key=$KEY&secret=$SECRET&scope=exploits"`
+	local OUTPUT=`wget -t2 -T6 -qO- "${MY_HOME}/extern/api/servers/$SERVER_ID/software?key=$KEY&secret=$SECRET&scope=exploits"`
 
 	if [ "$OUTPUT" == "" ]
 	then
@@ -457,7 +457,7 @@ function ApiServerScan {
 	local SECRET=`Urlencode $2`
 	local SERVER_ID=`Urlencode $3`
 
-	local OUTPUT=`wget -t2 -T2 -qO- "${MY_HOME}/extern/api/servers/$SERVER_ID/scan?key=$KEY&secret=$SECRET"  --post-data "not=used"`
+	local OUTPUT=`wget -t2 -T6 -qO- "${MY_HOME}/extern/api/servers/$SERVER_ID/scan?key=$KEY&secret=$SECRET"  --post-data "not=used"`
 
 	if [ "$OUTPUT" == "" ]
 	then
@@ -475,7 +475,7 @@ function ApiServerIsScanning {
 	local SECRET=`Urlencode $2`
 	local SERVER_ID=`Urlencode $3`
 
-	local OUTPUT=`wget -t2 -T2 -qO- "${MY_HOME}/extern/api/servers/$SERVER_ID/isScanning?key=$KEY&secret=$SECRET"`
+	local OUTPUT=`wget -t2 -T6 -qO- "${MY_HOME}/extern/api/servers/$SERVER_ID/isScanning?key=$KEY&secret=$SECRET"`
 
 	if [ "$OUTPUT" == "" ]
 	then
@@ -495,7 +495,7 @@ function ApiUserChange {
 	local SECRET=`Urlencode $2`
 	local EMAIL=`Urlencode $3`
 
-	local OUTPUT=`wget -t2 -T2 -qO- "${MY_HOME}/extern/api/user/update?key=$KEY&secret=$SECRET" --post-data "email=$EMAIL"`
+	local OUTPUT=`wget -t2 -T6 -qO- "${MY_HOME}/extern/api/user/update?key=$KEY&secret=$SECRET" --post-data "email=$EMAIL"`
 
 	if [ "$OUTPUT" == "" ]
 	then
@@ -514,7 +514,7 @@ function ApiUserRemove {
 	local KEY=`Urlencode $1`
 	local SECRET=`Urlencode $2`
 
-	local OUTPUT=`wget -t2 -T2 -qO- "${MY_HOME}/extern/api/user/delete?key=$KEY&secret=$SECRET" --post-data "not=used"`
+	local OUTPUT=`wget -t2 -T6 -qO- "${MY_HOME}/extern/api/user/delete?key=$KEY&secret=$SECRET" --post-data "not=used"`
 
 	if [ "$OUTPUT" == "" ]
 	then
