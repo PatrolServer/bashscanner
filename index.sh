@@ -446,7 +446,7 @@ function Scan {
 	if [[ "$CMD" == "false" ]] 
 	then
 	 	echo "> Scanning for newest releases and exploits, can take serveral minutes..."
-	 	echo "> Take a coffee brake ;) "
+	 	echo "> Take a coffee break ;) "
 	fi
 
  	SOFTWARE_PUST_RET=(`ApiServerPush $KEY $SECRET $SERVER_ID $BUCKET $SOFTWARE`)
