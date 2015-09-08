@@ -1250,69 +1250,114 @@ function Output {
 	then
 		echo -e "\tStrangely, No packages were found..."
 	fi 
-	for LINE in $SOFTWARE; do
-		LINE=`echo $LINE | json`
 
-		ID=`echo "$LINE" | grep '^\["id"\] | cut -f2-'`
-		NAME=`echo "$LINE" | grep '^\["name"\]' | cut -f2- | sed -e 's/^"//'  -e 's/"$//'`
-		VERSION=`echo "$LINE" | grep '^\["version"\]' | cut -f2- | sed -e 's/^"//'  -e 's/"$//'`
-		VERSIONS=`echo "$LINE" | grep '^\["versions"\]' | cut -f2-`
-		NEW_VERSION=`echo "$LINE" | grep '^\["newest_bugfix_release"\]' | cut -f2- | sed -e 's/^"//'  -e 's/"$//'`
-		SUPPORTED=`echo "$LINE" | grep '^\["supported"\]' | cut -f2- | sed -e 's/^"//'  -e 's/"$//'`
-		EXPLOITS=`echo "$LINE" | grep '^\["exploits"\]' | cut -f2- | json | grep '^\[[0-9]*,"risk"\]' | cut -f2-`
+	CORE_SOFTWARE=`echo "$SOFTWARE" | grep '"parent":null' | grep '"location":"\\\/"'`
+	OutputBlock "$SOFTWARE" "$CORE_SOFTWARE"
 
-		if [ "$VERSIONS" != "" ]
+	CORE_SOFTWARE=`echo "$SOFTWARE" | grep "\"parent\":null" | grep -v '"location":"\/"'`
+	OutputBlock "$SOFTWARE" "$CORE_SOFTWARE"
+}
+
+function OutputBlock {
+	SOFTWARE="$1"
+	BLOCK_SOFTWARE="$2"
+
+	PREV_LOCATION="---"
+	for LINE in $BLOCK_SOFTWARE; do
+
+		LINE=`echo "$LINE" | json`
+		CANONICAL_NAME=`echo "$LINE" | grep '^\["canonical_name"\]' | cut -f2- | sed -e 's/^"//'  -e 's/"$//'`
+		CANONICAL_NAME_GREP=`echo "$CANONICAL_NAME" | sed -e 's/[]\/$*.^|[]/\\\&/g'`
+		LOCATION=`echo "$LINE" | grep '^\["location"\]' | cut -f2- | sed -e 's/^"//'  -e 's/"$//'`
+		LOCATION_GREP=`echo "$LOCATION" | sed -e 's/[]\/$*.^|[]/\\\&/g'`
+
+		# Print out the location when it has changed
+		if [[ "$PREV_LOCATION" != "$LOCATION" ]] && [[ "$LOCATION" != '\/' ]]
 		then
-			VERSION=`echo $VERSIONS | json | grep '^\[0]' | cut -f2- | sed -e 's/^"//'  -e 's/"$//'`
-			VERSION=`echo "<=$VERSION"`
+			echo "";
+			echo -ne "\e[0;90m"
+			echo -n $LOCATION
+			echo -e "\e[0m"
+			echo "";
+
+			PREV_LOCATION="$LOCATION"
 		fi
 
-		echo -ne "\t$NAME: "
+		OutputLine "$LINE"
 
-		# Print current version
-		if [ "$VERSION" == "" ]
-		then
-			echo -n "version not detected"
-		elif [ "$SUPPORTED" == "yes" ]
-		then
-			echo -ne "\e[0;32m"
-			echo -n $VERSION
-			echo -ne "\e[0m"
-		elif [[ "$NEW_VERSION" != "" ]]
-	    then
-			echo -ne "\e[0;33m"
-			echo -n $VERSION
-			echo -ne "\e[0m"
-			echo -n ", update to "
-			echo -ne "\e[0;32m"
-			echo -n $NEW_VERSION
-			echo -ne "\e[0m"
-		else
-			echo -ne "\e[0;31m"
-			echo -n $VERSION
-			echo -ne "\e[0m"
-			echo -n ", not supported anymore"
-		fi
-
-		# Check exploits
-		COUNT_EXPLOITS=0
-		for EXPLOIT in $EXPLOITS; do
-			IS_BIGGER=`echo "$EXPLOIT" | grep "^[5-9]"`
-			if [[ "$IS_BIGGER" != "" ]]
-			then
-				COUNT_EXPLOITS=$((COUNT_EXPLOITS+1)) 
-			fi
+		# Print submodules
+		for LINE in `echo "$SOFTWARE" | grep '"parent":"'$CANONICAL_NAME_GREP'"' | grep "location\":\"$LOCATION_GREP"`; do
+			LINE=`echo "$LINE" | json`
+			
+			echo -en "\t"
+			OutputLine "$LINE"
 		done
-
-		if [ "$COUNT_EXPLOITS" != "0" ]
-		then
-			echo -ne "\e[0;31m"
-			echo -n " ($COUNT_EXPLOITS exploits)"
-			echo -ne "\e[0m"
-		fi
-
-		echo ""
 	done
+}
+
+function OutputLine {
+	LINE="$1"
+
+	NAME=`echo "$LINE" | grep '^\["name"\]' | cut -f2- | sed -e 's/^"//'  -e 's/"$//'`
+	VERSION=`echo "$LINE" | grep '^\["version"\]' | cut -f2- | sed -e 's/^"//'  -e 's/"$//'`
+	VERSIONS=`echo "$LINE" | grep '^\["versions"\]' | cut -f2-`
+	NEW_VERSION=`echo "$LINE" | grep '^\["newest_bugfix_release"\]' | cut -f2- | sed -e 's/^"//'  -e 's/"$//'`
+	SUPPORTED=`echo "$LINE" | grep '^\["supported"\]' | cut -f2- | sed -e 's/^"//'  -e 's/"$//'`
+	EXPLOITS=`echo "$LINE" | grep '^\["exploits"\]' | cut -f2- | json | grep '^\[[0-9]*,"risk"\]' | cut -f2-`
+	PARENT=`echo "$LINE" | grep '^\["parent"\]' | cut -f2- | sed -e 's/^"//'  -e 's/"$//'`
+	LOCATION=`echo "$LINE" | grep '^\["location"\]' | cut -f2- | sed -e 's/^"//'  -e 's/"$//'`
+
+	if [ "$VERSIONS" != "" ]
+	then
+		VERSION=`echo $VERSIONS | json | grep '^\[0]' | cut -f2- | sed -e 's/^"//'  -e 's/"$//'`
+		VERSION=`echo "<=$VERSION"`
+	fi
+
+	echo -ne "\t$NAME: "
+
+	# Print current version
+	if [ "$VERSION" == "" ]
+	then
+		echo -n "version not detected"
+	elif [ "$SUPPORTED" == "yes" ]
+	then
+		echo -ne "\e[0;32m"
+		echo -n $VERSION
+		echo -ne "\e[0m"
+	elif [[ "$NEW_VERSION" != "" ]]
+    then
+		echo -ne "\e[0;33m"
+		echo -n $VERSION
+		echo -ne "\e[0m"
+		echo -n ", update to "
+		echo -ne "\e[0;32m"
+		echo -n $NEW_VERSION
+		echo -ne "\e[0m"
+	else
+		echo -ne "\e[0;31m"
+		echo -n $VERSION
+		echo -ne "\e[0m"
+		echo -n ", not supported anymore"
+	fi
+
+	# Check exploits
+	COUNT_EXPLOITS=0
+	for EXPLOIT in $EXPLOITS; do
+		IS_BIGGER=`echo "$EXPLOIT" | grep "^[5-9]"`
+		if [ "$IS_BIGGER" == "1" ]
+		then
+			COUNT_EXPLOITS=$((COUNT_EXPLOITS+1)) 
+		fi
+	done
+
+	if [ "$COUNT_EXPLOITS" != "0" ]
+	then
+		echo -ne "\e[0;31m"
+		echo -n " ($COUNT_EXPLOITS exploits)"
+		echo -ne "\e[0m"
+	fi
+
+	echo ""
 }
 
 function Cronjob {
