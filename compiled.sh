@@ -369,10 +369,9 @@ function ApiServerPush {
 			if($3 == prevName){ $3=""; } else { prevName = $3; $3 = "\"n\":\""$3"\"," }; 
 			if($4 == prevVersion){ $4=""; } else { prevVersion = $4; $4 = "\"v\":\""$4"\"," }; 
 			line = $1$2$3$4; 
-			line = substr(line, 0, length(line))
 			print "{"line"},"; 
 		} 
-		END { print "{}]"; }' | tr -d '\n'`
+		END { print "{}]"; }' | sed 's/,},/},/' | tr -d '\n'`
 	SOFTWARE=`Urlencode "$SOFTWARE"`
 
 	echo "$SOFTWARE" >> $POSTFILE
