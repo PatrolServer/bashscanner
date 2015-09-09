@@ -508,7 +508,7 @@ function Output {
 	CORE_SOFTWARE=`echo "$SOFTWARE" | grep '"parent":null' | grep '"location":"\\\/"'`
 	OutputBlock "$SOFTWARE" "$CORE_SOFTWARE"
 
-	CORE_SOFTWARE=`echo "$SOFTWARE" | grep "\"parent\":null" | grep -v '"location":"\/"'`
+	CORE_SOFTWARE=`echo "$SOFTWARE" | grep "\"parent\":null" | grep -v '"location":"\\\/"'`
 	OutputBlock "$SOFTWARE" "$CORE_SOFTWARE"
 }
 
