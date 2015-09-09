@@ -443,6 +443,11 @@ function Scan {
 	SOFTWARE=`mktemp`
 	
 	# Update db
+	if ! `command -v updatedb >/dev/null 2>&1` && `command -v yum >/dev/null 2>&1`
+	then
+		echo "This script needs the mlocate package, please install: yum install mlocate"
+		exit 77
+	fi
 	updatedb -o "$LOCATE" -U / --require-visibility 0 2> /dev/null
 
 	# Do all scanners
