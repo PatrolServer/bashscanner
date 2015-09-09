@@ -418,7 +418,7 @@ function DetermineServer {
 		exit 77
 	fi
 
-	SERVER_ARRAY_ID=`echo $HAS_SERVER | grep -P '^\[[0-9]*' -o | grep -P '[0-9]*' -o`
+	SERVER_ARRAY_ID=`echo $HAS_SERVER | grep -P '^\[[0-9]+' -o | grep -P '[0-9]+' -o`
 	SERVER_ID=`echo $SERVERS | json | grep "^\[$SERVER_ARRAY_ID,\"id\"\]" | cut -f2-`
 	SERVER_VERIFIED=`echo $SERVERS | json | grep "^\[$SERVER_ARRAY_ID,\"verified\"\]" | cut -f2-`
 
