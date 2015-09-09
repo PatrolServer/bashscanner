@@ -153,7 +153,7 @@ function Register {
 
 function TestHostname {
 	OPEN_PORT_53=`echo "quit" | timeout 1 telnet 8.8.8.8 53 2> /dev/null |  grep "Escape character is"`
-	if [[ "$OPEN_PORT_53" != "" ]]
+	if [[ "$OPEN_PORT_53" != "" ]] && `command -v dig >/dev/null 2>&1`
 	then
 		EXTERNAL_IP=`dig +time=1 +tries=1 +retry=1 +short myip.opendns.com @resolver1.opendns.com | tail -n1`
 		IP=`dig @8.8.8.8 +short $HOSTNAME | tail -n1`
