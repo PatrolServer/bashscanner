@@ -155,11 +155,11 @@ function TestHostname {
 	OPEN_PORT_53=`echo "quit" | timeout 1 telnet 8.8.8.8 53 2> /dev/null |  grep "Escape character is"`
 	if [[ "$OPEN_PORT_53" != "" ]]
 	then
-		EXTERNAL_IP=`dig +time=1 +tries=1 +retry=1 +short myip.opendns.com @resolver1.opendns.com`
-		IP=`dig @8.8.8.8 +short $HOSTNAME`
+		EXTERNAL_IP=`dig +time=1 +tries=1 +retry=1 +short myip.opendns.com @resolver1.opendns.com | tail -n1`
+		IP=`dig @8.8.8.8 +short $HOSTNAME | tail -n1`
 	else
-		EXTERNAL_IP=`wget -qO- icanhazip.com`
-		IP=`host "$HOSTNAME" | cut -d' ' -f4`
+		EXTERNAL_IP=`wget -qO- ipv4.icanhazip.com`
+		IP=`host "$HOSTNAME" | grep -v 'alias' | grep -v 'mail' | cut -d' ' -f4 | head -n1`
 	fi
 }
 
