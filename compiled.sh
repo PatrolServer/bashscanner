@@ -702,17 +702,20 @@ function ComposerSoftware {
  #!/usr/bin/env bash
 
 function DpkgSoftware {
-   	local SUBSOFTWARE=`dpkg -l | grep '^i' | grep -v "lib" | tr -s ' ' | sed 's/ /\t/g'| cut -f2,3`
+   	if `command -v dpkg >/dev/null 2>&1`
+	then
+		local SUBSOFTWARE=`dpkg -l 2> /dev/null | grep '^i' | grep -v "lib" | tr -s ' ' | sed 's/ /\t/g'| cut -f2,3`
 
-   	for LINE in $SUBSOFTWARE; do
-   		NAME=`echo $LINE | cut -f1`
-		VERSION=`echo $LINE | cut -f2`
+	   	for LINE in $SUBSOFTWARE; do
+	   		NAME=`echo $LINE | cut -f1`
+			VERSION=`echo $LINE | cut -f2`
 
-		NAME=`Jsonspecialchars $NAME`
-		VERSION=`Jsonspecialchars $VERSION`
+			NAME=`Jsonspecialchars $NAME`
+			VERSION=`Jsonspecialchars $VERSION`
 
-		echo -e "/\t\t$NAME\t$VERSION" >> $SOFTWARE
-	done
+			echo -e "/\t\t$NAME\t$VERSION" >> $SOFTWARE
+		done
+	fi
 }
 #!/usr/bin/env bash
 
@@ -904,6 +907,13 @@ function TestHostname {
 		EXTERNAL_IP=`dig +time=1 +tries=1 +retry=1 +short myip.opendns.com @resolver1.opendns.com | tail -n1`
 		IP=`dig @8.8.8.8 +short $HOSTNAME | tail -n1`
 	else
+
+		if ! `command -v host >/dev/null 2>&1` && `command -v yum >/dev/null 2>&1`
+		then
+			echo "This script needs the bind utils package, please install: yum install bind-utils"
+			exit 77
+		fi
+
 		EXTERNAL_IP=`wget -qO- ipv4.icanhazip.com`
 		IP=`host "$HOSTNAME" | grep -v 'alias' | grep -v 'mail' | cut -d' ' -f4 | head -n1`
 	fi

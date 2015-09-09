@@ -158,6 +158,13 @@ function TestHostname {
 		EXTERNAL_IP=`dig +time=1 +tries=1 +retry=1 +short myip.opendns.com @resolver1.opendns.com | tail -n1`
 		IP=`dig @8.8.8.8 +short $HOSTNAME | tail -n1`
 	else
+
+		if ! `command -v host >/dev/null 2>&1` && `command -v yum >/dev/null 2>&1`
+		then
+			echo "This script needs the bind utils package, please install: yum install bind-utils"
+			exit 77
+		fi
+
 		EXTERNAL_IP=`wget -qO- ipv4.icanhazip.com`
 		IP=`host "$HOSTNAME" | grep -v 'alias' | grep -v 'mail' | cut -d' ' -f4 | head -n1`
 	fi
