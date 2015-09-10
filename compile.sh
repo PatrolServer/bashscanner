@@ -4,12 +4,12 @@
 
 SetEnv
 
-COMPILED=`cat index.sh`
-INCLUDES=`cat index.sh | grep "^\. "`
+COMPILED=$(cat index.sh)
+INCLUDES=$(grep "^\. " < index.sh)
 
 for INCLUDE in $INCLUDES; do
-	FILE=`echo $INCLUDE | cut -d ' ' -f2`
-	FILE_CONTENTS=`cat $FILE`
+	FILE=$(echo "$INCLUDE" | cut -d ' ' -f2)
+	FILE_CONTENTS=$(cat "$FILE")
 	COMPILED="${COMPILED/$INCLUDE/$FILE_CONTENTS}"
 done
 

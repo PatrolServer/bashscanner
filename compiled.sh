@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 
-MY_HOME="https://demo.patrolserver.com"
+MY_HOME="http://demo.patrolserver.local"
 
 #!/usr/bin/env bash
 
@@ -23,7 +23,7 @@ function Exit {
 }
 
 function Random {
-	cat /dev/urandom | tr -dc 'a-zA-Z0-9' | fold -w ${1:-32} | head -n 1
+	tr -dc 'a-zA-Z0-9' < /dev/urandom | fold -w "${1:-32}" | head -n 1
 }
 #!/usr/bin/env bash
 
@@ -227,14 +227,16 @@ json() {
 }
 #!/usr/bin/env bash
 
-COOKIES=`mktemp`
-POSTFILE=`mktemp`
+COOKIES=$(mktemp)
+POSTFILE=$(mktemp)
 
 function ApiUserRegister {
-	local EMAIL=`Urlencode $1`
-	local PASSWORD=`Urlencode $2`
+	local EMAIL, PASSWORD, OUTPUT, AUTHED, ERRORS, USER
 
-	local OUTPUT=`wget -t2 -T6 --keep-session-cookies --save-cookies $COOKIES -qO- "${MY_HOME}/api/user/register" --post-data "email=$EMAIL&password=$PASSWORD&password_confirmation=$PASSWORD"`
+	EMAIL=$(Urlencode "$1")
+	PASSWORD=$(Urlencode "$2")
+
+	OUTPUT=$(wget -t2 -T6 --keep-session-cookies --save-cookies "$COOKIES" -qO- "${MY_HOME}/api/user/register" --post-data "email=$EMAIL&password=$PASSWORD&password_confirmation=$PASSWORD")
 
 	if [ "$OUTPUT" == "" ]
 	then
@@ -242,20 +244,22 @@ function ApiUserRegister {
 		exit 77
 	fi
 
-	local AUTHED=`echo "$OUTPUT" | json | grep '^\["authed"\]' | cut -f2-`
-	local ERRORS=`echo "$OUTPUT" | json | grep '^\["errors",[0-9]\]' | cut -f2-`
-	local USER=`echo "$OUTPUT" | json | grep '^\["user"\]' | cut -f2-`
+	AUTHED=$(echo "$OUTPUT" | json | grep '^\["authed"\]' | cut -f2-)
+	ERRORS=$(echo "$OUTPUT" | json | grep '^\["errors",[0-9]\]' | cut -f2-)
+	USER=$(echo "$OUTPUT" | json | grep '^\["user"\]' | cut -f2-)
 
-	echo ${AUTHED:-false}
-	echo ${ERRORS:-false}
-	echo ${USER:-false}
+	echo "${AUTHED:-false}"
+	echo "${ERRORS:-false}"
+	echo "${USER:-false}"
 }
 
 function ApiUserLogin {
-	local EMAIL=`Urlencode $1`
-	local PASSWORD=`Urlencode $2`
+	local EMAIL, PASSWORD, OUTPUT, AUTHED, ERRORS, USER, CRITICAL, TYPE
 
-	local OUTPUT=`wget -t2 -T6 --keep-session-cookies --save-cookies $COOKIES -qO- "${MY_HOME}/api/user/login" --post-data "email=$EMAIL&password=$PASSWORD"`
+	EMAIL=$(Urlencode "$1")
+	PASSWORD=$(Urlencode "$2")
+
+	OUTPUT=$(wget -t2 -T6 --keep-session-cookies --save-cookies "$COOKIES" -qO- "${MY_HOME}/api/user/login" --post-data "email=$EMAIL&password=$PASSWORD")
 
 	if [ "$OUTPUT" == "" ]
 	then
@@ -263,23 +267,25 @@ function ApiUserLogin {
 		exit 77
 	fi
 
-	local AUTHED=`echo "$OUTPUT" | json | grep '^\["authed"\]' | cut -f2-`
-	local ERRORS=`echo "$OUTPUT" | json | grep '^\["errors",[0-9]\]' | cut -f2-`
-	local USER=`echo "$OUTPUT" | json | grep '^\["user"\]' | cut -f2-`
-	local CRITICAL=`echo "$OUTPUT" | json | grep '^\["critical"\]' | cut -f2-`
-	local TYPE=`echo "$OUTPUT" | json | grep '^\["type"\]' | cut -f2-`
+	AUTHED=$(echo "$OUTPUT" | json | grep '^\["authed"\]' | cut -f2-)
+	ERRORS=$(echo "$OUTPUT" | json | grep '^\["errors",[0-9]\]' | cut -f2-)
+	USER=$(echo "$OUTPUT" | json | grep '^\["user"\]' | cut -f2-)
+	CRITICAL=$(echo "$OUTPUT" | json | grep '^\["critical"\]' | cut -f2-)
+	TYPE=$(echo "$OUTPUT" | json | grep '^\["type"\]' | cut -f2-)
 
-	echo ${CRITICAL:-false}
-	echo ${TYPE:-false}
-	echo ${AUTHED:-false}
-	echo ${ERRORS:-false}
-	echo ${USER:-false}
+	echo "${CRITICAL:-false}"
+	echo "${TYPE:-false}"
+	echo "${AUTHED:-false}"
+	echo "${ERRORS:-false}"
+	echo "${USER:-false}"
 }
 
 function ApiServerExists {
-	local HOST=`Urlencode $1`
+	local HOST, OUTPUT, ERRORS, ERROR, EXISTS
 
-	local OUTPUT=`wget -t2 -T6 -qO- "${MY_HOME}/api/server/exists?host=$HOST"`
+	HOST=$(Urlencode "$1")
+
+	OUTPUT=$(wget -t2 -T6 -qO- "${MY_HOME}/api/server/exists?host=$HOST")
 
 	if [ "$OUTPUT" == "" ]
 	then
@@ -287,21 +293,23 @@ function ApiServerExists {
 		exit 77
 	fi
 
-	local ERRORS=`echo "$OUTPUT" | json | grep '^\["errors"\]' | cut -f2-`
-	local ERROR=`echo "$OUTPUT" | json | grep '^\["error"\]' | cut -f2-  | sed -e 's/^"//'  -e 's/"$//'`
-	local EXISTS=`echo "$OUTPUT" | json | grep '^\["exists"\]' | cut -f2-`
+	ERRORS=$(echo "$OUTPUT" | json | grep '^\["errors"\]' | cut -f2-)
+	ERROR=$(echo "$OUTPUT" | json | grep '^\["error"\]' | cut -f2-  | sed -e 's/^"//'  -e 's/"$//')
+	EXISTS=$(echo "$OUTPUT" | json | grep '^\["exists"\]' | cut -f2-)
 
-	echo ${EXISTS:-false}
-	echo ${ERROR:-false}
-	echo ${ERRORS:-false}
+	echo "${EXISTS:-false}"
+	echo "${ERROR:-false}"
+	echo "${ERRORS:-false}"
 }
 
 function ApiServerCreate {
-	local KEY=`Urlencode $1`
-	local SECRET=`Urlencode $2`
-	local HOSTNAME=`Urlencode $3`
+	local KEY, SECRET, HOSTNAME, OUTPUT, ID, ERROR
+
+	KEY=$(Urlencode "$1")
+	SECRET=$(Urlencode "$2")
+	HOSTNAME=$(Urlencode "$3")
 	
-	local OUTPUT=`wget -t2 -T6 -qO- "${MY_HOME}/extern/api/servers?key=$KEY&secret=$SECRET" --post-data "domain=$HOSTNAME"`
+	OUTPUT=$(wget -t2 -T6 -qO- "${MY_HOME}/extern/api/servers?key=$KEY&secret=$SECRET" --post-data "domain=$HOSTNAME")
 
 	if [ "$OUTPUT" == "" ]
 	then
@@ -309,17 +317,19 @@ function ApiServerCreate {
 		exit 77
 	fi
 
-	local ID=`echo "$OUTPUT" | json | grep '^\["data","id"\]' | cut -f2-`
-	local ERROR=`echo "$OUTPUT" | json | grep '^\["error"\]' | cut -f2-`
+	ID=$(echo "$OUTPUT" | json | grep '^\["data","id"\]' | cut -f2-)
+	ERROR=$(echo "$OUTPUT" | json | grep '^\["error"\]' | cut -f2-)
 
-	echo ${ERROR:-false}
-	echo ${ID:-false}
+	echo "${ERROR:-false}"
+	echo "${ID:-false}"
 }	
 
 function ApiServerToken {
-	local HOSTNAME=`Urlencode $1`
+	local HOSTNAME, OUTPUT, TOKEN, ERROR
 	
-	local OUTPUT=`wget -t2 -T6 -qO- "${MY_HOME}/extern/api/request_verification_token?domain=$HOSTNAME"`
+	HOSTNAME=$(Urlencode "$1")
+	
+	OUTPUT=$(wget -t2 -T6 -qO- "${MY_HOME}/extern/api/request_verification_token?domain=$HOSTNAME")
 
 	if [ "$OUTPUT" == "" ]
 	then
@@ -327,20 +337,22 @@ function ApiServerToken {
 		exit 77
 	fi
 
-	local TOKEN=`echo "$OUTPUT" | json | grep '^\["data","token"\]' | cut -f2- | sed -e 's/^"//'  -e 's/"$//'`
-	local ERROR=`echo "$OUTPUT" | json | grep '^\["error"\]' | cut -f2-`
+	TOKEN=$(echo "$OUTPUT" | json | grep '^\["data","token"\]' | cut -f2- | sed -e 's/^"//'  -e 's/"$//')
+	ERROR=$(echo "$OUTPUT" | json | grep '^\["error"\]' | cut -f2-)
 
-	echo ${ERROR:-false}
-	echo ${TOKEN:-false}
+	echo "${ERROR:-false}"
+	echo "${TOKEN:-false}"
 }	
 
 function ApiVerifyServer {
-	local KEY=`Urlencode $1`
-	local SECRET=`Urlencode $2`
-	local SERVER_ID=`Urlencode $3`
-	local TOKEN=`Urlencode $4`
+	local KEY, SECRET, SERVER_ID, TOKEN, OUTPUT, ERROR
+
+	KEY=$(Urlencode "$1")
+	SECRET=$(Urlencode "$2")
+	SERVER_ID=$(Urlencode "$3")
+	TOKEN=$(Urlencode "$4")
 	
-	local OUTPUT=`wget -t2 -T6 -qO- "${MY_HOME}/extern/api/servers/${SERVER_ID}/verify?key=$KEY&secret=$SECRET" --post-data "token=$TOKEN"`
+	OUTPUT=$(wget -t2 -T6 -qO- "${MY_HOME}/extern/api/servers/${SERVER_ID}/verify?key=$KEY&secret=$SECRET" --post-data "token=$TOKEN")
 
 	if [ "$OUTPUT" == "" ]
 	then
@@ -348,21 +360,23 @@ function ApiVerifyServer {
 		exit 77
 	fi
 
-	local ERROR=`echo "$OUTPUT" | json | grep '^\["error"\]' | cut -f2-`
+	ERROR=$(echo "$OUTPUT" | json | grep '^\["error"\]' | cut -f2-)
 
-	echo ${ERROR:-false}
+	echo "${ERROR:-false}"
 }	
 	
 function ApiServerPush {
-	local KEY=`Urlencode $1`
-	local SECRET=`Urlencode $2`
-	local SERVER_ID=`Urlencode $3`
-	local BUCKET=`Urlencode $4`
-	local EXPIRE="129600"
+	local KEY, SECRET, SERVER_ID, BUCKET, EXPIRE, OUTPUT, ERROR
 
-	echo -n "expire=$EXPIRE&software=" > $POSTFILE
+	KEY=$(Urlencode "$1")
+	SECRET=$(Urlencode "$2")
+	SERVER_ID=$(Urlencode "$3")
+	BUCKET=$(Urlencode "$4")
+	EXPIRE="129600"
 
-	SOFTWARE=`cat $SOFTWARE | sort | uniq | awk 'BEGIN { RS="\n"; FS="\t"; print "["; prevLocation="---"; prevName="---"; prevVersion="---"; prevParent="---";} 
+	echo -n "expire=$EXPIRE&software=" > "$POSTFILE"
+
+	SOFTWARE=$(sort < "$SOFTWARE" | uniq | awk 'BEGIN { RS="\n"; FS="\t"; print "["; prevLocation="---"; prevName="---"; prevVersion="---"; prevParent="---";} 
 		{ 
 			if($1 == prevLocation){ $1=""; } else { prevLocation = $1; $1 = "\"l\":\""$1"\"," }; 
 			if($2 == prevParent){ $2=""; } else { prevParent = $2; $2 = "\"p\":\""$2"\"," }; 
@@ -371,13 +385,13 @@ function ApiServerPush {
 			line = $1$2$3$4; 
 			print "{"line"},"; 
 		} 
-		END { print "{}]"; }' | sed 's/,},/},/' | tr -d '\n'`
-	SOFTWARE=`Urlencode "$SOFTWARE"`
+		END { print "{}]"; }' | sed 's/,},/},/' | tr -d '\n')
+	SOFTWARE=$(Urlencode "$SOFTWARE")
 
-	echo "$SOFTWARE" >> $POSTFILE
+	echo "$SOFTWARE" >> "$POSTFILE"
 
 
-	local OUTPUT=`wget -t2 -T6 -qO- "${MY_HOME}/extern/api/servers/${SERVER_ID}/software_bucket/$BUCKET?key=$KEY&secret=$SECRET&scope=silent" --post-file $POSTFILE`
+	OUTPUT=$(wget -t2 -T6 -qO- "${MY_HOME}/extern/api/servers/${SERVER_ID}/software_bucket/$BUCKET?key=$KEY&secret=$SECRET&scope=silent" --post-file $POSTFILE)
 
 	if [ "$OUTPUT" == "" ]
 	then
@@ -385,14 +399,15 @@ function ApiServerPush {
 		exit 77
 	fi
 
-	local ERROR=`echo "$OUTPUT" | json | grep '^\["error"\]' | cut -f2-`
+	ERROR=$(echo "$OUTPUT" | json | grep '^\["error"\]' | cut -f2-)
 
-	echo ${ERROR:-false}
+	echo "${ERROR:-false}"
 }
 
 function ApiKeySecret {
+	local OUTPUT, KEY, SECRET
 
-	local OUTPUT=`wget -t2 -T6 --load-cookies $COOKIES -qO- "${MY_HOME}/api/user/api_credentials"`
+	OUTPUT=$(wget -t2 -T6 --load-cookies "$COOKIES" -qO- "${MY_HOME}/api/user/api_credentials")
 
 	if [ "$OUTPUT" == "" ]
 	then
@@ -400,15 +415,17 @@ function ApiKeySecret {
 		exit 77
 	fi
 
-	local KEY=`echo "$OUTPUT" | json | grep '^\[0,"key"\]' | cut -f2- | sed -e 's/^"//'  -e 's/"$//'`
-	local SECRET=`echo "$OUTPUT" | json | grep '^\[0,"secret"\]' | cut -f2- | sed -e 's/^"//'  -e 's/"$//'`
+	KEY=$(echo "$OUTPUT" | json | grep '^\[0,"key"\]' | cut -f2- | sed -e 's/^"//'  -e 's/"$//')
+	SECRET=$(echo "$OUTPUT" | json | grep '^\[0,"secret"\]' | cut -f2- | sed -e 's/^"//'  -e 's/"$//')
 
-	echo ${KEY:-false}
-	echo ${SECRET:-false}
+	echo "${KEY:-false}"
+	echo "${SECRET:-false}"
 }
 
 function ApiCreateKeySecret {
-	local OUTPUT=`wget -t2 -T6 --load-cookies $COOKIES -qO- "${MY_HOME}/api/user/api_credentials" --post-data "not=used"`
+	local OUTPUT
+
+	OUTPUT=$(wget -t2 -T6 --load-cookies "$COOKIES" -qO- "${MY_HOME}/api/user/api_credentials" --post-data "not=used")
 
 	if [ "$OUTPUT" == "" ]
 	then
@@ -418,10 +435,12 @@ function ApiCreateKeySecret {
 }
 
 function ApiServers {
-	local KEY=`Urlencode $1`
-	local SECRET=`Urlencode $2`
+	local KEY, SECRET, OUTPUT, SERVERS, ERROR
 
-	local OUTPUT=`wget -t2 -T6 -qO- "${MY_HOME}/extern/api/servers?key=$KEY&secret=$SECRET"`
+	KEY=$(Urlencode "$1")
+	SECRET=$(Urlencode "$2")
+
+	OUTPUT=$(wget -t2 -T6 -qO- "${MY_HOME}/extern/api/servers?key=$KEY&secret=$SECRET")
 
 	if [ "$OUTPUT" == "" ]
 	then
@@ -429,19 +448,21 @@ function ApiServers {
 		exit 77
 	fi
 
-	local SERVERS=`echo "$OUTPUT" | json | grep '^\["data"\]' | cut -f2-`
-	local ERROR=`echo "$OUTPUT" | json | grep '^\["error"\]' | cut -f2-`
+	SERVERS=$(echo "$OUTPUT" | json | grep '^\["data"\]' | cut -f2-)
+	ERROR=$(echo "$OUTPUT" | json | grep '^\["error"\]' | cut -f2-)
 
-	echo ${ERROR:-false}
-	echo ${SERVERS:-false}
+	echo "${ERROR:-false}"
+	echo "${SERVERS:-false}"
 }
 
 function ApiSoftware {
-	local KEY=`Urlencode $1`
-	local SECRET=`Urlencode $2`
-	local SERVER_ID=`Urlencode $3`
+	local KEY, SECRET, SERVER_ID, OUTPUT, SOFTWARE, ERROR
 
-	local OUTPUT=`wget -t2 -T6 -qO- "${MY_HOME}/extern/api/servers/$SERVER_ID/software?key=$KEY&secret=$SECRET&scope=exploits"`
+	KEY=$(Urlencode "$1")
+	SECRET=$(Urlencode "$2")
+	SERVER_ID=$(Urlencode "$3")
+
+	OUTPUT=$(wget -t2 -T6 -qO- "${MY_HOME}/extern/api/servers/$SERVER_ID/software?key=$KEY&secret=$SECRET&scope=exploits")
 
 	if [ "$OUTPUT" == "" ]
 	then
@@ -449,19 +470,21 @@ function ApiSoftware {
 		exit 77
 	fi
 
-	local SOFTWARE=`echo "$OUTPUT" | json | grep '^\["data"\]' | cut -f2-`
-	local ERROR=`echo "$OUTPUT" | json | grep '^\["error"\]' | cut -f2-`
+	SOFTWARE=$(echo "$OUTPUT" | json | grep '^\["data"\]' | cut -f2-)
+	ERROR=$(echo "$OUTPUT" | json | grep '^\["error"\]' | cut -f2-)
 
-	echo ${ERROR:-false}
-	echo ${SOFTWARE:-false}
+	echo "${ERROR:-false}"
+	echo "${SOFTWARE:-false}"
 }
 
 function ApiServerScan {
-	local KEY=`Urlencode $1`
-	local SECRET=`Urlencode $2`
-	local SERVER_ID=`Urlencode $3`
+	local KEY, SECRET, SERVER_ID, OUTPUT, ERROR
 
-	local OUTPUT=`wget -t2 -T6 -qO- "${MY_HOME}/extern/api/servers/$SERVER_ID/scan?key=$KEY&secret=$SECRET"  --post-data "not=used"`
+	KEY=$(Urlencode "$1")
+	SECRET=$(Urlencode "$2")
+	SERVER_ID=$(Urlencode "$3")
+
+	OUTPUT=$(wget -t2 -T6 -qO- "${MY_HOME}/extern/api/servers/$SERVER_ID/scan?key=$KEY&secret=$SECRET"  --post-data "not=used")
 
 	if [ "$OUTPUT" == "" ]
 	then
@@ -469,17 +492,19 @@ function ApiServerScan {
 		exit 77
 	fi
 
-	local ERROR=`echo "$OUTPUT" | json | grep '^\["error"\]' | cut -f2-`
+	ERROR=$(echo "$OUTPUT" | json | grep '^\["error"\]' | cut -f2-)
 
-	echo ${ERROR:-false}
+	echo "${ERROR:-false}"
 }
 
 function ApiServerIsScanning {
-	local KEY=`Urlencode $1`
-	local SECRET=`Urlencode $2`
-	local SERVER_ID=`Urlencode $3`
+	local KEY, SECRET, SERVER_ID, OUTPUT, ERROR, SCANNING
 
-	local OUTPUT=`wget -t2 -T6 -qO- "${MY_HOME}/extern/api/servers/$SERVER_ID/isScanning?key=$KEY&secret=$SECRET"`
+	KEY=$(Urlencode "$1")
+	SECRET=$(Urlencode "$2")
+	SERVER_ID=$(Urlencode "$3")
+
+	OUTPUT=$(wget -t2 -T6 -qO- "${MY_HOME}/extern/api/servers/$SERVER_ID/isScanning?key=$KEY&secret=$SECRET")
 
 	if [ "$OUTPUT" == "" ]
 	then
@@ -487,19 +512,21 @@ function ApiServerIsScanning {
 		exit 77
 	fi
 
-	local ERROR=`echo "$OUTPUT" | json | grep '^\["error"\]' | cut -f2-`
-	local SCANNING=`echo "$OUTPUT" | json | grep '^\["data"\]' | cut -f2-`
+	ERROR=$(echo "$OUTPUT" | json | grep '^\["error"\]' | cut -f2-)
+	SCANNING=$(echo "$OUTPUT" | json | grep '^\["data"\]' | cut -f2-)
 
-	echo ${ERROR:-false}
-	echo ${SCANNING:-false}
+	echo "${ERROR:-false}"
+	echo "${SCANNING:-false}"
 }
 
 function ApiUserChange {
-	local KEY=`Urlencode $1`
-	local SECRET=`Urlencode $2`
-	local EMAIL=`Urlencode $3`
+	local KEY, SECRET, EMAIL, OUTPUT, ERRORS, SUCCESS
 
-	local OUTPUT=`wget -t2 -T6 -qO- "${MY_HOME}/extern/api/user/update?key=$KEY&secret=$SECRET" --post-data "email=$EMAIL"`
+	KEY=$(Urlencode "$1")
+	SECRET=$(Urlencode "$2")
+	EMAIL=$(Urlencode "$3")
+
+	OUTPUT=$(wget -t2 -T6 -qO- "${MY_HOME}/extern/api/user/update?key=$KEY&secret=$SECRET" --post-data "email=$EMAIL")
 
 	if [ "$OUTPUT" == "" ]
 	then
@@ -507,18 +534,20 @@ function ApiUserChange {
 		exit 77
 	fi
 
-	local ERRORS=`echo "$OUTPUT" | json | grep '^\["errors"\]' | cut -f2-`
-	local SUCCESS=`echo "$OUTPUT" | json | grep '^\["success"\]' | cut -f2-`
+	ERRORS=$(echo "$OUTPUT" | json | grep '^\["errors"\]' | cut -f2-)
+	SUCCESS=$(echo "$OUTPUT" | json | grep '^\["success"\]' | cut -f2-)
 
-	echo ${ERRORS:-false}
-	echo ${SUCCESS:-false}
+	echo "${ERRORS:-false}"
+	echo "${SUCCESS:-false}"
 }
 
 function ApiUserRemove {
-	local KEY=`Urlencode $1`
-	local SECRET=`Urlencode $2`
+	local KEY, SECRET, OUTPUT
 
-	local OUTPUT=`wget -t2 -T6 -qO- "${MY_HOME}/extern/api/user/delete?key=$KEY&secret=$SECRET" --post-data "not=used"`
+	KEY=$(Urlencode "$1")
+	SECRET=$(Urlencode "$2")
+
+	OUTPUT=$(wget -t2 -T6 -qO- "${MY_HOME}/extern/api/user/delete?key=$KEY&secret=$SECRET" --post-data "not=used")
 
 	if [ "$OUTPUT" == "" ]
 	then
@@ -526,17 +555,19 @@ function ApiUserRemove {
 		exit 77
 	fi
 
-	#local ERRORS=`echo "$OUTPUT" | json | grep '^\["errors"\]' | cut -f2-`
-	#local SUCCESS=`echo "$OUTPUT" | json | grep '^\["success"\]' | cut -f2-`
+	#ERRORS=$(echo "$OUTPUT" | json | grep '^\["errors"\]' | cut -f2-)
+	#SUCCESS=$(echo "$OUTPUT" | json | grep '^\["success"\]' | cut -f2-)
 
-	#echo ${ERRORS:-false}
-	#echo ${SUCCESS:-false}
+	#echo "${ERRORS:-false}"
+	#echo "${SUCCESS:-false}"
 }
 
 function Urlencode {
-	local STRING="${1}"
-	local STRLEN=${#STRING}
-	local ENCODED=""
+	local STRING, STRLEN, ENCODED
+
+	STRING="${1}"
+	STRLEN=${#STRING}
+	ENCODED=""
 
 	for (( pos=0 ; pos<STRLEN ; pos++ )); do
 		c=${STRING:$pos:1}
@@ -547,11 +578,11 @@ function Urlencode {
 		ENCODED+="${o}"
 	done
 
-	echo ${ENCODED:-false}
+	echo "${ENCODED:-false}"
 }
 
 function Jsonspecialchars {
-	echo $1 | sed "s/'/\\\\\'/g"
+	echo "$1" | sed "s/'/\\\\\'/g"
 }
 #!/usr/bin/env bash
 
@@ -768,7 +799,7 @@ SECRET=""
 CMD="false"
 SERVER_ID=""
 BUCKET="BashScanner"
-LOCATE=`mktemp`
+LOCATE=$(mktemp)
 
 function Start {
 	SetEnv
@@ -807,12 +838,12 @@ function Login {
 		for I in 1 2 3
 		do
 			echo -en "\tYour email: "
-			read EMAIL
+			read -r EMAIL
 			echo -en "\tYour password: "
-			read -s PASSWORD
+			read -rs PASSWORD
 			echo "";
 
-			LOGIN_RET=(`ApiUserLogin $EMAIL $PASSWORD`)
+			LOGIN_RET=($(ApiUserLogin "$EMAIL" "$PASSWORD"))
 
 			local LOGIN_CRITICAL=${LOGIN_RET[0]}
 			local LOGIN_TYPE=${LOGIN_RET[1]}
@@ -820,13 +851,13 @@ function Login {
 			local LOGIN_ERRORS=${LOGIN_RET[3]}
 			local LOGIN_USER=${LOGIN_RET[4]}
 
-			if [ $LOGIN_AUTHED == "true" ]
+			if [ "$LOGIN_AUTHED" == "true" ]
 			then
 				return
-			elif [ $LOGIN_CRITICAL == "true" ]
+			elif [ "$LOGIN_CRITICAL" == "true" ]
 			then
 				echo "> Your login was blocked for security issues, a mail was send to unblock yourself. After clicking on the link, you can try again." >&2
-			elif [ $LOGIN_TYPE == '"to_much_tries"' ]
+			elif [ "$LOGIN_TYPE" == '"to_much_tries"' ]
 			then
 				echo "> Your login was blocked for security issues, please try again in 10 min." >&2
 				exit 77
@@ -849,7 +880,7 @@ function Login {
 			exit 77
 		fi
 
-		LOGIN_RET=(`ApiUserLogin $EMAIL $PASSWORD`)
+		LOGIN_RET=($(ApiUserLogin "$EMAIL" "$PASSWORD"))
 
 		local LOGIN_CRITICAL=${LOGIN_RET[0]}
 		local LOGIN_TYPE=${LOGIN_RET[1]}
@@ -857,14 +888,14 @@ function Login {
 		local LOGIN_ERRORS=${LOGIN_RET[3]}
 		local LOGIN_USER=${LOGIN_RET[4]}
 
-		if [ $LOGIN_AUTHED == "true" ]
+		if [ "$LOGIN_AUTHED" == "true" ]
 		then
 			return
-		elif [ $LOGIN_CRITICAL == "true" ]
+		elif [ "$LOGIN_CRITICAL" == "true" ]
 		then
 			echo "Your login was blocked for security issues (Unblock mail send)." >&2
 			exit 77
-		elif [ $LOGIN_TYPE == '"to_much_tries"' ]
+		elif [ "$LOGIN_TYPE" == '"to_much_tries"' ]
 		then
 			echo "Your login was blocked for security issues (Unblock mail send)" >&2
 			exit 77
@@ -878,13 +909,13 @@ function Login {
 }
 
 function Register {
-	REGISTER_RET=(`ApiUserRegister $EMAIL $PASSWORD`)
+	REGISTER_RET=($(ApiUserRegister "$EMAIL" "$PASSWORD"))
 
 	local REGISTER_AUTHED=${REGISTER_RET[0]}
 	local REGISTER_ERRORS=${REGISTER_RET[1]}
 	local REGISTER_USER=${REGISTER_RET[2]}
 
-	if [ $REGISTER_AUTHED == "true" ]
+	if [ "$REGISTER_AUTHED" == "true" ]
 	then
 		echo "success"
 		return
@@ -901,21 +932,21 @@ function Register {
 }
 
 function TestHostname {
-	OPEN_PORT_53=`echo "quit" | timeout 1 telnet 8.8.8.8 53 2> /dev/null |  grep "Escape character is"`
-	if [[ "$OPEN_PORT_53" != "" ]] && `command -v dig >/dev/null 2>&1`
+	OPEN_PORT_53=$(echo "quit" | timeout 1 telnet 8.8.8.8 53 2> /dev/null |  grep "Escape character is")
+	if [[ "$OPEN_PORT_53" != "" ]] && command -v dig >/dev/null 2>&1
 	then
-		EXTERNAL_IP=`dig +time=1 +tries=1 +retry=1 +short myip.opendns.com @resolver1.opendns.com | tail -n1`
-		IP=`dig @8.8.8.8 +short $HOSTNAME | tail -n1`
+		EXTERNAL_IP=$(dig +time=1 +tries=1 +retry=1 +short myip.opendns.com @resolver1.opendns.com | tail -n1)
+		IP=$(dig @8.8.8.8 +short $HOSTNAME | tail -n1)
 	else
 
-		if ! `command -v host >/dev/null 2>&1` && `command -v yum >/dev/null 2>&1`
+		if ! command -v host >/dev/null 2>&1 && command -v yum >/dev/null 2>&1
 		then
 			echo "This script needs the bind utils package, please install: yum install bind-utils"
 			exit 77
 		fi
 
-		EXTERNAL_IP=`wget -qO- ipv4.icanhazip.com`
-		IP=`host "$HOSTNAME" | grep -v 'alias' | grep -v 'mail' | cut -d' ' -f4 | head -n1`
+		EXTERNAL_IP=$(wget -qO- ipv4.icanhazip.com)
+		IP=$(host "$HOSTNAME" | grep -v 'alias' | grep -v 'mail' | cut -d' ' -f4 | head -n1)
 	fi
 }
 
@@ -923,7 +954,7 @@ function Hostname {
 
 	if [[ "$HOSTNAME" == "" ]]
 	then
-		HOSTNAME=`hostname -f 2> /dev/null`
+		HOSTNAME=$(hostname -f 2> /dev/null)
 	fi
 
 	if [[ "$HOSTNAME" != "" ]]
@@ -937,7 +968,7 @@ function Hostname {
 		then
 			echo "Hostname not found (Please enter with command)" >&2
 			exit 77;
-		elif [[ $IP != $EXTERNAL_IP ]]
+		elif [[ "$IP" != "$EXTERNAL_IP" ]]
 		then
 			echo "Hostname doesn't resolve to external IP of this server" >&2
 			exit 77;
@@ -951,13 +982,13 @@ function Hostname {
 		then
 			echo "> Could not determine your hostname."
 			echo -en "\tPlease enter the hostname of this server: "
-			read HOSTNAME
+			read -r HOSTNAME
 			echo "";
-		elif [[ $IP != $EXTERNAL_IP ]]
+		elif [[ "$IP" != "$EXTERNAL_IP" ]]
 		then
 			echo "> Your hostname ($HOSTNAME) doesn't resolve to this IP."
 			echo -en "\tPlease enter the hostname that resolved to this ip: "
-			read HOSTNAME
+			read -r HOSTNAME
 			echo "";
 		fi
 
@@ -980,7 +1011,7 @@ function GetKeySecret {
 	fi
 
 	# Get the first KEY/SECRET combo
-	KEY_SECRET_RET=(`ApiKeySecret`)
+	KEY_SECRET_RET=($(ApiKeySecret))
 
 	KEY=${KEY_SECRET_RET[0]}
 	SECRET=${KEY_SECRET_RET[1]}
@@ -990,7 +1021,7 @@ function GetKeySecret {
 	then	
 		ApiCreateKeySecret > /dev/null
 
-		KEY_SECRET_RET=(`ApiKeySecret`)
+		KEY_SECRET_RET=($(ApiKeySecret))
 
 		KEY=${KEY_SECRET_RET[0]}
 		SECRET=${KEY_SECRET_RET[1]}
@@ -1019,7 +1050,7 @@ function DetermineHostname {
 		# Please note! You can remove this check, but our policy doesn't change.
 		# Only one free server per domain is allowed.
 		# We actively check for these criteria
-		SERVER_EXISTS_RET=(`ApiServerExists $HOSTNAME`)
+		SERVER_EXISTS_RET=($(ApiServerExists "$HOSTNAME"))
 
 		SERVER_EXISTS=${SERVER_EXISTS_RET[0]}
 		SERVER_EXISTS_ERROR_TYPE=${SERVER_EXISTS_RET[1]}
@@ -1065,18 +1096,18 @@ function Account {
 		echo "> You can use this tool 5 times without account." 
 	
 		YN="..."
-		while [[ $YN != "n" ]] && [[ $YN != "y" ]]; do
-			read -p "> Do you want to create an account (y/n)? " YN
+		while [[ "$YN" != "n" ]] && [[ $YN != "y" ]]; do
+			read -rp "> Do you want to create an account (y/n)? " YN
 	 	done
 	 fi
 
- 	if [ $YN == "n" ]
+ 	if [ "$YN" == "n" ]
  	then
 		# Create account when no account exists.
-		EMAIL="tmp-`Random`@$HOSTNAME"
-		PASSWORD=`Random`
+		EMAIL="tmp-$(Random)@$HOSTNAME"
+		PASSWORD=$(Random)
 
-		REGISTER_RET=`Register $EMAIL $PASSWORD`
+		REGISTER_RET=$(Register "$EMAIL" "$PASSWORD")
 		if [ "$REGISTER_RET" != "success" ]
 		then
 			echo "> Internal error, could not create temporary account"
@@ -1091,18 +1122,18 @@ function Account {
 		
 			# Ask what account should be created.
 			echo -en "\tYour email: "
-			read EMAIL
+			read -r EMAIL
 			echo -en "\tNew password: "
-			read -s PASSWORD
+			read -rs PASSWORD
 			echo ""
 			echo -en "\tRetype your password: "
-			read -s PASSWORD2
+			read -rs PASSWORD2
 			echo "";
 
 			REGISTER_RET=""
 			if [ "$PASSWORD" == "$PASSWORD2" ] && [ ${#PASSWORD} -ge 7 ]
 			then
-				REGISTER_RET=`Register $EMAIL $PASSWORD`
+				REGISTER_RET=$(Register "$EMAIL" "$PASSWORD")
 				if [ "$REGISTER_RET" == "success" ]
 				then
 					GetKeySecret
@@ -1135,17 +1166,17 @@ function Account {
 }
 
 function DetermineServer {
-	SERVERS_RET=(`ApiServers $KEY $SECRET`)
+	SERVERS_RET=($(ApiServers "$KEY" "$SECRET"))
 	SERVERS_ERRORS=${SERVERS_RET[0]}
 	SERVERS=${SERVERS_RET[1]}
 
-	HAS_SERVER=`echo $SERVERS | json | grep -P '^\[[0-9]*,"name"\]\t"'$HOSTNAME'"'`
+	HAS_SERVER=$(echo "$SERVERS" | json | grep -P '^\[[0-9]*,"name"\]\t"'"$HOSTNAME"'"')
 
 	# Check if the server has already been created
 	if [ "$HAS_SERVER" == "" ]
 	then
 
-		SERVER_CREATE_RET=(`ApiServerCreate $KEY $SECRET $HOSTNAME`)
+		SERVER_CREATE_RET=($(ApiServerCreate "$KEY" "$SECRET" "$HOSTNAME"))
 		SERVER_CREATE_ERRORS=${SERVER_CREATE_RET[0]}
 
 		if [[ "$SERVER_CREATE_ERRORS" =~ "You exceeded the maximum allowed server slots" ]]
@@ -1154,11 +1185,11 @@ function DetermineServer {
 			exit 77;
 		fi
 
-		SERVERS_RET=(`ApiServers $KEY $SECRET`)
+		SERVERS_RET=($(ApiServers "$KEY" "$SECRET"))
 		SERVERS_ERRORS=${SERVERS_RET[0]}
 		SERVERS=${SERVERS_RET[1]}
 
-		HAS_SERVER=`echo $SERVERS | json | grep -P '^\[[0-9]*,"name"\]\t"'$HOSTNAME'"' -o`
+		HAS_SERVER=$(echo "$SERVERS" | json | grep -P '^\[[0-9]*,"name"\]\t"'"$HOSTNAME"'"' -o)
 	fi
 	
 	if [ "$HAS_SERVER" == "" ]
@@ -1167,18 +1198,18 @@ function DetermineServer {
 		exit 77
 	fi
 
-	SERVER_ARRAY_ID=`echo $HAS_SERVER | grep -P '^\[[0-9]+' -o | grep -P '[0-9]+' -o`
-	SERVER_ID=`echo $SERVERS | json | grep "^\[$SERVER_ARRAY_ID,\"id\"\]" | cut -f2-`
-	SERVER_VERIFIED=`echo $SERVERS | json | grep "^\[$SERVER_ARRAY_ID,\"verified\"\]" | cut -f2-`
+	SERVER_ARRAY_ID=$(echo "$HAS_SERVER" | grep -P '^\[[0-9]+' -o | grep -P '[0-9]+' -o)
+	SERVER_ID=$(echo "$SERVERS" | json | grep "^\[$SERVER_ARRAY_ID,\"id\"\]" | cut -f2-)
+	SERVER_VERIFIED=$(echo "$SERVERS" | json | grep "^\[$SERVER_ARRAY_ID,\"verified\"\]" | cut -f2-)
 
 	# Check if the server has already been verified
 	if [ "$SERVER_VERIFIED" == "false" ]
 	then
-		SERVER_TOKEN_RET=(`ApiServerToken $HOSTNAME`)
+		SERVER_TOKEN_RET=($(ApiServerToken "$HOSTNAME"))
 		SERVER_TOKEN_ERRORS=${SERVER_TOKEN_RET[0]}
 		SERVER_TOKEN=${SERVER_TOKEN_RET[1]}
 
-		SERVER_VERIFY_RET=(`ApiVerifyServer $KEY $SECRET $SERVER_ID $SERVER_TOKEN`)
+		SERVER_VERIFY_RET=($(ApiVerifyServer "$KEY" "$SECRET" "$SERVER_ID" "$SERVER_TOKEN"))
 		SERVER_TOKEN_ERRORS=${SERVER_VERIFY_RET[0]}
 	fi	
 }
@@ -1189,10 +1220,10 @@ function Scan {
 		echo "> Searching for packages, can take some time..."
 	fi
 
-	SOFTWARE=`mktemp`
+	SOFTWARE=$(mktemp)
 	
 	# Update db
-	if ! `command -v updatedb >/dev/null 2>&1` && `command -v yum >/dev/null 2>&1`
+	if ! command -v updatedb >/dev/null 2>&1 && command -v yum >/dev/null 2>&1
 	then
 		echo "This script needs the mlocate package, please install: yum install mlocate"
 		exit 77
@@ -1210,29 +1241,29 @@ function Scan {
 	 	echo "> Take a coffee break ;) "
 	fi
 
- 	SOFTWARE_PUST_RET=(`ApiServerPush $KEY $SECRET $SERVER_ID $BUCKET $SOFTWARE`)
+ 	SOFTWARE_PUST_RET=($(ApiServerPush "$KEY" "$SECRET" "$SERVER_ID" "$BUCKET" "$SOFTWARE"))
  	SOFTWARE_PUST_ERRORS=${SOFTWARE_PUST_RET[0]}
 
  	if [ "$SOFTWARE_PUST_ERRORS" != "false" ]
  	then
  		echo "> Could not upload software data, please give our support team a call with the following details" >&2
- 		echo $SOFTWARE_PUST_ERRORS >&2
+ 		echo "$SOFTWARE_PUST_ERRORS" >&2
  		exit 77
  	fi
 
- 	SERVER_SCAN_RET=(`ApiServerScan $KEY $SECRET $SERVER_ID`)
+ 	SERVER_SCAN_RET=($(ApiServerScan "$KEY" "$SECRET" "$SERVER_ID"))
  	SERVER_SCAN_ERRORS=${SERVER_SCAN_RET[0]}
 
  	if [ "$SERVER_SCAN_ERRORS" != "false" ]
  	then
  		echo "> Could not send scan command, please give our support team a call with the following details" >&2
- 		echo $SERVER_SCAN_ERRORS >&2
+ 		echo "$SERVER_SCAN_ERRORS" >&2
  		exit 77
  	fi
 
  	SERVER_SCANNING="true"
  	while [ "$SERVER_SCANNING" == "true" ] ; do
-	 	SERVER_SCANNING_RET=(`ApiServerIsScanning $KEY $SECRET $SERVER_ID`)
+	 	SERVER_SCANNING_RET=($(ApiServerIsScanning "$KEY" "$SECRET" "$SERVER_ID"))
 	 	SERVER_SCANNING_ERRORS=${SERVER_SCANNING_RET[0]}
 		SERVER_SCANNING=${SERVER_SCANNING_RET[1]}
 
@@ -1256,20 +1287,20 @@ function Output {
 		echo "> Software versions has been retrieved (Solutions for the exploits can be seen on our web interface):"
 	fi
 
-	SOFTWARE_RET=(`ApiSoftware $KEY $SECRET $SERVER_ID`)
+	SOFTWARE_RET=($(ApiSoftware "$KEY" "$SECRET" "$SERVER_ID"))
 	SOFTWARE_ERRORS=${SOFTWARE_RET[0]}
 	SOFTWARE_JSON=${SOFTWARE_RET[1]}
 
-	SOFTWARE=`echo $SOFTWARE_JSON | json | grep -P "^\[[0-9]{1,}\]" | cut -f2-`
+	SOFTWARE=$(echo "$SOFTWARE_JSON" | json | grep -P "^\[[0-9]{1,}\]" | cut -f2-)
 	if [ "$SOFTWARE" == "" ]
 	then
 		echo -e "\tStrangely, No packages were found..."
 	fi 
 
-	CORE_SOFTWARE=`echo "$SOFTWARE" | grep '"parent":null' | grep '"location":"\\\/"'`
+	CORE_SOFTWARE=$(echo "$SOFTWARE" | grep '"parent":null' | grep '"location":"\\\/"')
 	OutputBlock "$SOFTWARE" "$CORE_SOFTWARE"
 
-	CORE_SOFTWARE=`echo "$SOFTWARE" | grep "\"parent\":null" | grep -v '"location":"\\\/"'`
+	CORE_SOFTWARE=$(echo "$SOFTWARE" | grep "\"parent\":null" | grep -v '"location":"\\\/"')
 	OutputBlock "$SOFTWARE" "$CORE_SOFTWARE"
 }
 
@@ -1280,18 +1311,18 @@ function OutputBlock {
 	PREV_LOCATION="---"
 	for LINE in $BLOCK_SOFTWARE; do
 
-		LINE=`echo "$LINE" | json`
-		CANONICAL_NAME=`echo "$LINE" | grep '^\["canonical_name"\]' | cut -f2- | sed -e 's/^"//'  -e 's/"$//'`
-		CANONICAL_NAME_GREP=`echo "$CANONICAL_NAME" | sed -e 's/[]\/$*.^|[]/\\\&/g'`
-		LOCATION=`echo "$LINE" | grep '^\["location"\]' | cut -f2- | sed -e 's/^"//'  -e 's/"$//'`
-		LOCATION_GREP=`echo "$LOCATION" | sed -e 's/[]\/$*.^|[]/\\\&/g'`
+		LINE=$(echo "$LINE" | json)
+		CANONICAL_NAME=$(echo "$LINE" | grep '^\["canonical_name"\]' | cut -f2- | sed -e 's/^"//'  -e 's/"$//')
+		CANONICAL_NAME_GREP=$(echo "$CANONICAL_NAME" | sed -e 's/[]\/$*.^|[]/\\\&/g')
+		LOCATION=$(echo "$LINE" | grep '^\["location"\]' | cut -f2- | sed -e 's/^"//'  -e 's/"$//')
+		LOCATION_GREP=$(echo "$LOCATION" | sed -e 's/[]\/$*.^|[]/\\\&/g')
 
 		# Print out the location when it has changed
 		if [[ "$PREV_LOCATION" != "$LOCATION" ]] && [[ "$LOCATION" != '\/' ]]
 		then
 			echo "";
 			echo -ne "\e[0;90m"
-			echo -n $LOCATION
+			echo -n "$LOCATION"
 			echo -e "\e[0m"
 			echo "";
 
@@ -1301,8 +1332,8 @@ function OutputBlock {
 		OutputLine "$LINE"
 
 		# Print submodules
-		for LINE in `echo "$SOFTWARE" | grep '"parent":"'$CANONICAL_NAME_GREP'"' | grep "location\":\"$LOCATION_GREP"`; do
-			LINE=`echo "$LINE" | json`
+		for LINE in $(echo "$SOFTWARE" | grep '"parent":"'"$CANONICAL_NAME_GREP"'"' | grep "location\":\"$LOCATION_GREP"); do
+			LINE=$(echo "$LINE" | json)
 			
 			echo -en "\t"
 			OutputLine "$LINE"
@@ -1313,19 +1344,18 @@ function OutputBlock {
 function OutputLine {
 	LINE="$1"
 
-	NAME=`echo "$LINE" | grep '^\["name"\]' | cut -f2- | sed -e 's/^"//'  -e 's/"$//'`
-	VERSION=`echo "$LINE" | grep '^\["version"\]' | cut -f2- | sed -e 's/^"//'  -e 's/"$//'`
-	VERSIONS=`echo "$LINE" | grep '^\["versions"\]' | cut -f2-`
-	NEW_VERSION=`echo "$LINE" | grep '^\["newest_bugfix_release"\]' | cut -f2- | sed -e 's/^"//'  -e 's/"$//'`
-	SUPPORTED=`echo "$LINE" | grep '^\["supported"\]' | cut -f2- | sed -e 's/^"//'  -e 's/"$//'`
-	EXPLOITS=`echo "$LINE" | grep '^\["exploits"\]' | cut -f2- | json | grep '^\[[0-9]*,"risk"\]' | cut -f2-`
-	PARENT=`echo "$LINE" | grep '^\["parent"\]' | cut -f2- | sed -e 's/^"//'  -e 's/"$//'`
-	LOCATION=`echo "$LINE" | grep '^\["location"\]' | cut -f2- | sed -e 's/^"//'  -e 's/"$//'`
+	NAME=$(echo "$LINE" | grep '^\["name"\]' | cut -f2- | sed -e 's/^"//'  -e 's/"$//')
+	VERSION=$(echo "$LINE" | grep '^\["version"\]' | cut -f2- | sed -e 's/^"//'  -e 's/"$//')
+	VERSIONS=$(echo "$LINE" | grep '^\["versions"\]' | cut -f2-)
+	NEW_VERSION=$(echo "$LINE" | grep '^\["newest_bugfix_release"\]' | cut -f2- | sed -e 's/^"//'  -e 's/"$//')
+	SUPPORTED=$(echo "$LINE" | grep '^\["supported"\]' | cut -f2- | sed -e 's/^"//'  -e 's/"$//')
+	EXPLOITS=$(echo "$LINE" | grep '^\["exploits"\]' | cut -f2- | json | grep '^\[[0-9]*,"risk"\]' | cut -f2-)
+	LOCATION=$(echo "$LINE" | grep '^\["location"\]' | cut -f2- | sed -e 's/^"//'  -e 's/"$//')
 
 	if [ "$VERSIONS" != "" ]
 	then
-		VERSION=`echo $VERSIONS | json | grep '^\[0]' | cut -f2- | sed -e 's/^"//'  -e 's/"$//'`
-		VERSION=`echo "<=$VERSION"`
+		VERSION=$(echo "$VERSIONS" | json | grep '^\[0]' | cut -f2- | sed -e 's/^"//'  -e 's/"$//')
+		VERSION="<=$VERSION"
 	fi
 
 	echo -ne "\t$NAME: "
@@ -1337,20 +1367,20 @@ function OutputLine {
 	elif [ "$SUPPORTED" == "yes" ]
 	then
 		echo -ne "\e[0;32m"
-		echo -n $VERSION
+		echo -n "$VERSION"
 		echo -ne "\e[0m"
 	elif [[ "$NEW_VERSION" != "" ]]
     then
 		echo -ne "\e[0;33m"
-		echo -n $VERSION
+		echo -n "$VERSION"
 		echo -ne "\e[0m"
 		echo -n ", update to "
 		echo -ne "\e[0;32m"
-		echo -n $NEW_VERSION
+		echo -n "$NEW_VERSION"
 		echo -ne "\e[0m"
 	else
 		echo -ne "\e[0;31m"
-		echo -n $VERSION
+		echo -n "$VERSION"
 		echo -ne "\e[0m"
 		echo -n ", not supported anymore"
 	fi
@@ -1358,7 +1388,7 @@ function OutputLine {
 	# Check exploits
 	COUNT_EXPLOITS=0
 	for EXPLOIT in $EXPLOITS; do
-		IS_BIGGER=`echo "$EXPLOIT" | grep "^[5-9]"`
+		IS_BIGGER=$(echo "$EXPLOIT" | grep "^[5-9]")
 		if [ "$IS_BIGGER" == "1" ]
 		then
 			COUNT_EXPLOITS=$((COUNT_EXPLOITS+1)) 
@@ -1378,7 +1408,7 @@ function OutputLine {
 function Cronjob {
 
 	# User has already a cronjob defined
-	HAS_CRONTAB=`crontab -l 2> /dev/null | grep "patrolserver"`
+	HAS_CRONTAB=$(crontab -l 2> /dev/null | grep "patrolserver")
 	if [ "$HAS_CRONTAB" != "" ]
 	then
 		return
@@ -1391,15 +1421,15 @@ function Cronjob {
 
 	# Check if user want a cronjob
 	YN="..."
-	while [[ $YN != "n" ]] && [[ $YN != "y" ]]; do
-		read -p "> It is advisable to check your server daily, should we set a cronjob (y/n)? " YN
+	while [[ "$YN" != "n" ]] && [[ $YN != "y" ]]; do
+		read -rp "> It is advisable to check your server daily, should we set a cronjob (y/n)? " YN
  	done
 
-	if [ $YN == "n" ]
+	if [ "$YN" == "n" ]
 	then
 		if [[ "$EMAIL" == tmp\-* ]]
 		then
-			ApiUserRemove $KEY $SECRET
+			ApiUserRemove "$KEY" "$SECRET"
 		fi
 
 	else
@@ -1407,10 +1437,10 @@ function Cronjob {
 		if [[ "$EMAIL" == tmp\-* ]]
 		then
 			echo -n "> What is your email address to send reports to? "
-			read REAL_EMAIL
+			read -r REAL_EMAIL
 			echo ""
 
-			CHANGE_EMAIL_RET=(`ApiUserChange $KEY $SECRET $REAL_EMAIL`)
+			CHANGE_EMAIL_RET=($(ApiUserChange "$KEY" "$SECRET" "$REAL_EMAIL"))
 			CHANGE_EMAIL_ERRORS=${CHANGE_EMAIL_RET[0]}
 			CHANGE_EMAIL_SUCCESS=${CHANGE_EMAIL_RET[1]}
 
@@ -1429,17 +1459,17 @@ function Cronjob {
 
 		mkdir ~/.patrolserver 2> /dev/null
 	    echo -e "HOSTNAME=$HOSTNAME\nKEY=$KEY\nSECRET=$SECRET" > ~/.patrolserver/env
-	    cat $LOCATE > ~/.patrolserver/locate.db
+	    cat "$LOCATE" > ~/.patrolserver/locate.db
 	    wget -O ~/.patrolserver/patrolserver "https://raw.githubusercontent.com/PatrolServer/bashScanner/master/patrolserver" 2&>1 /dev/null
 	    chmod +x ~/.patrolserver/patrolserver
 
 	    # Set cronjob
-	    CRON_TMP=`mktemp`
-		crontab -l 2> /dev/null > $CRON_TMP
-		CRON_HOUR=$[ RANDOM % 24 ]
-		CRON_MINUTE=$[ RANDOM % 60 ]
+	    CRON_TMP=$(mktemp)
+		crontab -l 2> /dev/null > "$CRON_TMP"
+		CRON_HOUR=$((RANDOM % 24))
+		CRON_MINUTE=$((RANDOM % 60))
 		echo "$CRON_MINUTE $CRON_HOUR * * * $HOME/.patrolserver/patrolserver --cmd --key=$KEY --secret=$SECRET --hostname=$HOSTNAME" >> $CRON_TMP
-		crontab $CRON_TMP
+		crontab "$CRON_TMP"
 
 	    echo "> cronjob was set."
 

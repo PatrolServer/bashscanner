@@ -1,13 +1,15 @@
 #!/usr/bin/env bash
 
-COOKIES=`mktemp`
-POSTFILE=`mktemp`
+COOKIES=$(mktemp)
+POSTFILE=$(mktemp)
 
 function ApiUserRegister {
-	local EMAIL=`Urlencode $1`
-	local PASSWORD=`Urlencode $2`
+	local EMAIL, PASSWORD, OUTPUT, AUTHED, ERRORS, USER
 
-	local OUTPUT=`wget -t2 -T6 --keep-session-cookies --save-cookies $COOKIES -qO- "${MY_HOME}/api/user/register" --post-data "email=$EMAIL&password=$PASSWORD&password_confirmation=$PASSWORD"`
+	EMAIL=$(Urlencode "$1")
+	PASSWORD=$(Urlencode "$2")
+
+	OUTPUT=$(wget -t2 -T6 --keep-session-cookies --save-cookies "$COOKIES" -qO- "${MY_HOME}/api/user/register" --post-data "email=$EMAIL&password=$PASSWORD&password_confirmation=$PASSWORD")
 
 	if [ "$OUTPUT" == "" ]
 	then
@@ -15,20 +17,22 @@ function ApiUserRegister {
 		exit 77
 	fi
 
-	local AUTHED=`echo "$OUTPUT" | json | grep '^\["authed"\]' | cut -f2-`
-	local ERRORS=`echo "$OUTPUT" | json | grep '^\["errors",[0-9]\]' | cut -f2-`
-	local USER=`echo "$OUTPUT" | json | grep '^\["user"\]' | cut -f2-`
+	AUTHED=$(echo "$OUTPUT" | json | grep '^\["authed"\]' | cut -f2-)
+	ERRORS=$(echo "$OUTPUT" | json | grep '^\["errors",[0-9]\]' | cut -f2-)
+	USER=$(echo "$OUTPUT" | json | grep '^\["user"\]' | cut -f2-)
 
-	echo ${AUTHED:-false}
-	echo ${ERRORS:-false}
-	echo ${USER:-false}
+	echo "${AUTHED:-false}"
+	echo "${ERRORS:-false}"
+	echo "${USER:-false}"
 }
 
 function ApiUserLogin {
-	local EMAIL=`Urlencode $1`
-	local PASSWORD=`Urlencode $2`
+	local EMAIL, PASSWORD, OUTPUT, AUTHED, ERRORS, USER, CRITICAL, TYPE
 
-	local OUTPUT=`wget -t2 -T6 --keep-session-cookies --save-cookies $COOKIES -qO- "${MY_HOME}/api/user/login" --post-data "email=$EMAIL&password=$PASSWORD"`
+	EMAIL=$(Urlencode "$1")
+	PASSWORD=$(Urlencode "$2")
+
+	OUTPUT=$(wget -t2 -T6 --keep-session-cookies --save-cookies "$COOKIES" -qO- "${MY_HOME}/api/user/login" --post-data "email=$EMAIL&password=$PASSWORD")
 
 	if [ "$OUTPUT" == "" ]
 	then
@@ -36,23 +40,25 @@ function ApiUserLogin {
 		exit 77
 	fi
 
-	local AUTHED=`echo "$OUTPUT" | json | grep '^\["authed"\]' | cut -f2-`
-	local ERRORS=`echo "$OUTPUT" | json | grep '^\["errors",[0-9]\]' | cut -f2-`
-	local USER=`echo "$OUTPUT" | json | grep '^\["user"\]' | cut -f2-`
-	local CRITICAL=`echo "$OUTPUT" | json | grep '^\["critical"\]' | cut -f2-`
-	local TYPE=`echo "$OUTPUT" | json | grep '^\["type"\]' | cut -f2-`
+	AUTHED=$(echo "$OUTPUT" | json | grep '^\["authed"\]' | cut -f2-)
+	ERRORS=$(echo "$OUTPUT" | json | grep '^\["errors",[0-9]\]' | cut -f2-)
+	USER=$(echo "$OUTPUT" | json | grep '^\["user"\]' | cut -f2-)
+	CRITICAL=$(echo "$OUTPUT" | json | grep '^\["critical"\]' | cut -f2-)
+	TYPE=$(echo "$OUTPUT" | json | grep '^\["type"\]' | cut -f2-)
 
-	echo ${CRITICAL:-false}
-	echo ${TYPE:-false}
-	echo ${AUTHED:-false}
-	echo ${ERRORS:-false}
-	echo ${USER:-false}
+	echo "${CRITICAL:-false}"
+	echo "${TYPE:-false}"
+	echo "${AUTHED:-false}"
+	echo "${ERRORS:-false}"
+	echo "${USER:-false}"
 }
 
 function ApiServerExists {
-	local HOST=`Urlencode $1`
+	local HOST, OUTPUT, ERRORS, ERROR, EXISTS
 
-	local OUTPUT=`wget -t2 -T6 -qO- "${MY_HOME}/api/server/exists?host=$HOST"`
+	HOST=$(Urlencode "$1")
+
+	OUTPUT=$(wget -t2 -T6 -qO- "${MY_HOME}/api/server/exists?host=$HOST")
 
 	if [ "$OUTPUT" == "" ]
 	then
@@ -60,21 +66,23 @@ function ApiServerExists {
 		exit 77
 	fi
 
-	local ERRORS=`echo "$OUTPUT" | json | grep '^\["errors"\]' | cut -f2-`
-	local ERROR=`echo "$OUTPUT" | json | grep '^\["error"\]' | cut -f2-  | sed -e 's/^"//'  -e 's/"$//'`
-	local EXISTS=`echo "$OUTPUT" | json | grep '^\["exists"\]' | cut -f2-`
+	ERRORS=$(echo "$OUTPUT" | json | grep '^\["errors"\]' | cut -f2-)
+	ERROR=$(echo "$OUTPUT" | json | grep '^\["error"\]' | cut -f2-  | sed -e 's/^"//'  -e 's/"$//')
+	EXISTS=$(echo "$OUTPUT" | json | grep '^\["exists"\]' | cut -f2-)
 
-	echo ${EXISTS:-false}
-	echo ${ERROR:-false}
-	echo ${ERRORS:-false}
+	echo "${EXISTS:-false}"
+	echo "${ERROR:-false}"
+	echo "${ERRORS:-false}"
 }
 
 function ApiServerCreate {
-	local KEY=`Urlencode $1`
-	local SECRET=`Urlencode $2`
-	local HOSTNAME=`Urlencode $3`
+	local KEY, SECRET, HOSTNAME, OUTPUT, ID, ERROR
+
+	KEY=$(Urlencode "$1")
+	SECRET=$(Urlencode "$2")
+	HOSTNAME=$(Urlencode "$3")
 	
-	local OUTPUT=`wget -t2 -T6 -qO- "${MY_HOME}/extern/api/servers?key=$KEY&secret=$SECRET" --post-data "domain=$HOSTNAME"`
+	OUTPUT=$(wget -t2 -T6 -qO- "${MY_HOME}/extern/api/servers?key=$KEY&secret=$SECRET" --post-data "domain=$HOSTNAME")
 
 	if [ "$OUTPUT" == "" ]
 	then
@@ -82,17 +90,19 @@ function ApiServerCreate {
 		exit 77
 	fi
 
-	local ID=`echo "$OUTPUT" | json | grep '^\["data","id"\]' | cut -f2-`
-	local ERROR=`echo "$OUTPUT" | json | grep '^\["error"\]' | cut -f2-`
+	ID=$(echo "$OUTPUT" | json | grep '^\["data","id"\]' | cut -f2-)
+	ERROR=$(echo "$OUTPUT" | json | grep '^\["error"\]' | cut -f2-)
 
-	echo ${ERROR:-false}
-	echo ${ID:-false}
+	echo "${ERROR:-false}"
+	echo "${ID:-false}"
 }	
 
 function ApiServerToken {
-	local HOSTNAME=`Urlencode $1`
+	local HOSTNAME, OUTPUT, TOKEN, ERROR
 	
-	local OUTPUT=`wget -t2 -T6 -qO- "${MY_HOME}/extern/api/request_verification_token?domain=$HOSTNAME"`
+	HOSTNAME=$(Urlencode "$1")
+	
+	OUTPUT=$(wget -t2 -T6 -qO- "${MY_HOME}/extern/api/request_verification_token?domain=$HOSTNAME")
 
 	if [ "$OUTPUT" == "" ]
 	then
@@ -100,20 +110,22 @@ function ApiServerToken {
 		exit 77
 	fi
 
-	local TOKEN=`echo "$OUTPUT" | json | grep '^\["data","token"\]' | cut -f2- | sed -e 's/^"//'  -e 's/"$//'`
-	local ERROR=`echo "$OUTPUT" | json | grep '^\["error"\]' | cut -f2-`
+	TOKEN=$(echo "$OUTPUT" | json | grep '^\["data","token"\]' | cut -f2- | sed -e 's/^"//'  -e 's/"$//')
+	ERROR=$(echo "$OUTPUT" | json | grep '^\["error"\]' | cut -f2-)
 
-	echo ${ERROR:-false}
-	echo ${TOKEN:-false}
+	echo "${ERROR:-false}"
+	echo "${TOKEN:-false}"
 }	
 
 function ApiVerifyServer {
-	local KEY=`Urlencode $1`
-	local SECRET=`Urlencode $2`
-	local SERVER_ID=`Urlencode $3`
-	local TOKEN=`Urlencode $4`
+	local KEY, SECRET, SERVER_ID, TOKEN, OUTPUT, ERROR
+
+	KEY=$(Urlencode "$1")
+	SECRET=$(Urlencode "$2")
+	SERVER_ID=$(Urlencode "$3")
+	TOKEN=$(Urlencode "$4")
 	
-	local OUTPUT=`wget -t2 -T6 -qO- "${MY_HOME}/extern/api/servers/${SERVER_ID}/verify?key=$KEY&secret=$SECRET" --post-data "token=$TOKEN"`
+	OUTPUT=$(wget -t2 -T6 -qO- "${MY_HOME}/extern/api/servers/${SERVER_ID}/verify?key=$KEY&secret=$SECRET" --post-data "token=$TOKEN")
 
 	if [ "$OUTPUT" == "" ]
 	then
@@ -121,21 +133,23 @@ function ApiVerifyServer {
 		exit 77
 	fi
 
-	local ERROR=`echo "$OUTPUT" | json | grep '^\["error"\]' | cut -f2-`
+	ERROR=$(echo "$OUTPUT" | json | grep '^\["error"\]' | cut -f2-)
 
-	echo ${ERROR:-false}
+	echo "${ERROR:-false}"
 }	
 	
 function ApiServerPush {
-	local KEY=`Urlencode $1`
-	local SECRET=`Urlencode $2`
-	local SERVER_ID=`Urlencode $3`
-	local BUCKET=`Urlencode $4`
-	local EXPIRE="129600"
+	local KEY, SECRET, SERVER_ID, BUCKET, EXPIRE, OUTPUT, ERROR
 
-	echo -n "expire=$EXPIRE&software=" > $POSTFILE
+	KEY=$(Urlencode "$1")
+	SECRET=$(Urlencode "$2")
+	SERVER_ID=$(Urlencode "$3")
+	BUCKET=$(Urlencode "$4")
+	EXPIRE="129600"
 
-	SOFTWARE=`cat $SOFTWARE | sort | uniq | awk 'BEGIN { RS="\n"; FS="\t"; print "["; prevLocation="---"; prevName="---"; prevVersion="---"; prevParent="---";} 
+	echo -n "expire=$EXPIRE&software=" > "$POSTFILE"
+
+	SOFTWARE=$(sort < "$SOFTWARE" | uniq | awk 'BEGIN { RS="\n"; FS="\t"; print "["; prevLocation="---"; prevName="---"; prevVersion="---"; prevParent="---";} 
 		{ 
 			if($1 == prevLocation){ $1=""; } else { prevLocation = $1; $1 = "\"l\":\""$1"\"," }; 
 			if($2 == prevParent){ $2=""; } else { prevParent = $2; $2 = "\"p\":\""$2"\"," }; 
@@ -144,13 +158,13 @@ function ApiServerPush {
 			line = $1$2$3$4; 
 			print "{"line"},"; 
 		} 
-		END { print "{}]"; }' | sed 's/,},/},/' | tr -d '\n'`
-	SOFTWARE=`Urlencode "$SOFTWARE"`
+		END { print "{}]"; }' | sed 's/,},/},/' | tr -d '\n')
+	SOFTWARE=$(Urlencode "$SOFTWARE")
 
-	echo "$SOFTWARE" >> $POSTFILE
+	echo "$SOFTWARE" >> "$POSTFILE"
 
 
-	local OUTPUT=`wget -t2 -T6 -qO- "${MY_HOME}/extern/api/servers/${SERVER_ID}/software_bucket/$BUCKET?key=$KEY&secret=$SECRET&scope=silent" --post-file $POSTFILE`
+	OUTPUT=$(wget -t2 -T6 -qO- "${MY_HOME}/extern/api/servers/${SERVER_ID}/software_bucket/$BUCKET?key=$KEY&secret=$SECRET&scope=silent" --post-file $POSTFILE)
 
 	if [ "$OUTPUT" == "" ]
 	then
@@ -158,14 +172,15 @@ function ApiServerPush {
 		exit 77
 	fi
 
-	local ERROR=`echo "$OUTPUT" | json | grep '^\["error"\]' | cut -f2-`
+	ERROR=$(echo "$OUTPUT" | json | grep '^\["error"\]' | cut -f2-)
 
-	echo ${ERROR:-false}
+	echo "${ERROR:-false}"
 }
 
 function ApiKeySecret {
+	local OUTPUT, KEY, SECRET
 
-	local OUTPUT=`wget -t2 -T6 --load-cookies $COOKIES -qO- "${MY_HOME}/api/user/api_credentials"`
+	OUTPUT=$(wget -t2 -T6 --load-cookies "$COOKIES" -qO- "${MY_HOME}/api/user/api_credentials")
 
 	if [ "$OUTPUT" == "" ]
 	then
@@ -173,15 +188,17 @@ function ApiKeySecret {
 		exit 77
 	fi
 
-	local KEY=`echo "$OUTPUT" | json | grep '^\[0,"key"\]' | cut -f2- | sed -e 's/^"//'  -e 's/"$//'`
-	local SECRET=`echo "$OUTPUT" | json | grep '^\[0,"secret"\]' | cut -f2- | sed -e 's/^"//'  -e 's/"$//'`
+	KEY=$(echo "$OUTPUT" | json | grep '^\[0,"key"\]' | cut -f2- | sed -e 's/^"//'  -e 's/"$//')
+	SECRET=$(echo "$OUTPUT" | json | grep '^\[0,"secret"\]' | cut -f2- | sed -e 's/^"//'  -e 's/"$//')
 
-	echo ${KEY:-false}
-	echo ${SECRET:-false}
+	echo "${KEY:-false}"
+	echo "${SECRET:-false}"
 }
 
 function ApiCreateKeySecret {
-	local OUTPUT=`wget -t2 -T6 --load-cookies $COOKIES -qO- "${MY_HOME}/api/user/api_credentials" --post-data "not=used"`
+	local OUTPUT
+
+	OUTPUT=$(wget -t2 -T6 --load-cookies "$COOKIES" -qO- "${MY_HOME}/api/user/api_credentials" --post-data "not=used")
 
 	if [ "$OUTPUT" == "" ]
 	then
@@ -191,10 +208,12 @@ function ApiCreateKeySecret {
 }
 
 function ApiServers {
-	local KEY=`Urlencode $1`
-	local SECRET=`Urlencode $2`
+	local KEY, SECRET, OUTPUT, SERVERS, ERROR
 
-	local OUTPUT=`wget -t2 -T6 -qO- "${MY_HOME}/extern/api/servers?key=$KEY&secret=$SECRET"`
+	KEY=$(Urlencode "$1")
+	SECRET=$(Urlencode "$2")
+
+	OUTPUT=$(wget -t2 -T6 -qO- "${MY_HOME}/extern/api/servers?key=$KEY&secret=$SECRET")
 
 	if [ "$OUTPUT" == "" ]
 	then
@@ -202,19 +221,21 @@ function ApiServers {
 		exit 77
 	fi
 
-	local SERVERS=`echo "$OUTPUT" | json | grep '^\["data"\]' | cut -f2-`
-	local ERROR=`echo "$OUTPUT" | json | grep '^\["error"\]' | cut -f2-`
+	SERVERS=$(echo "$OUTPUT" | json | grep '^\["data"\]' | cut -f2-)
+	ERROR=$(echo "$OUTPUT" | json | grep '^\["error"\]' | cut -f2-)
 
-	echo ${ERROR:-false}
-	echo ${SERVERS:-false}
+	echo "${ERROR:-false}"
+	echo "${SERVERS:-false}"
 }
 
 function ApiSoftware {
-	local KEY=`Urlencode $1`
-	local SECRET=`Urlencode $2`
-	local SERVER_ID=`Urlencode $3`
+	local KEY, SECRET, SERVER_ID, OUTPUT, SOFTWARE, ERROR
 
-	local OUTPUT=`wget -t2 -T6 -qO- "${MY_HOME}/extern/api/servers/$SERVER_ID/software?key=$KEY&secret=$SECRET&scope=exploits"`
+	KEY=$(Urlencode "$1")
+	SECRET=$(Urlencode "$2")
+	SERVER_ID=$(Urlencode "$3")
+
+	OUTPUT=$(wget -t2 -T6 -qO- "${MY_HOME}/extern/api/servers/$SERVER_ID/software?key=$KEY&secret=$SECRET&scope=exploits")
 
 	if [ "$OUTPUT" == "" ]
 	then
@@ -222,19 +243,21 @@ function ApiSoftware {
 		exit 77
 	fi
 
-	local SOFTWARE=`echo "$OUTPUT" | json | grep '^\["data"\]' | cut -f2-`
-	local ERROR=`echo "$OUTPUT" | json | grep '^\["error"\]' | cut -f2-`
+	SOFTWARE=$(echo "$OUTPUT" | json | grep '^\["data"\]' | cut -f2-)
+	ERROR=$(echo "$OUTPUT" | json | grep '^\["error"\]' | cut -f2-)
 
-	echo ${ERROR:-false}
-	echo ${SOFTWARE:-false}
+	echo "${ERROR:-false}"
+	echo "${SOFTWARE:-false}"
 }
 
 function ApiServerScan {
-	local KEY=`Urlencode $1`
-	local SECRET=`Urlencode $2`
-	local SERVER_ID=`Urlencode $3`
+	local KEY, SECRET, SERVER_ID, OUTPUT, ERROR
 
-	local OUTPUT=`wget -t2 -T6 -qO- "${MY_HOME}/extern/api/servers/$SERVER_ID/scan?key=$KEY&secret=$SECRET"  --post-data "not=used"`
+	KEY=$(Urlencode "$1")
+	SECRET=$(Urlencode "$2")
+	SERVER_ID=$(Urlencode "$3")
+
+	OUTPUT=$(wget -t2 -T6 -qO- "${MY_HOME}/extern/api/servers/$SERVER_ID/scan?key=$KEY&secret=$SECRET"  --post-data "not=used")
 
 	if [ "$OUTPUT" == "" ]
 	then
@@ -242,17 +265,19 @@ function ApiServerScan {
 		exit 77
 	fi
 
-	local ERROR=`echo "$OUTPUT" | json | grep '^\["error"\]' | cut -f2-`
+	ERROR=$(echo "$OUTPUT" | json | grep '^\["error"\]' | cut -f2-)
 
-	echo ${ERROR:-false}
+	echo "${ERROR:-false}"
 }
 
 function ApiServerIsScanning {
-	local KEY=`Urlencode $1`
-	local SECRET=`Urlencode $2`
-	local SERVER_ID=`Urlencode $3`
+	local KEY, SECRET, SERVER_ID, OUTPUT, ERROR, SCANNING
 
-	local OUTPUT=`wget -t2 -T6 -qO- "${MY_HOME}/extern/api/servers/$SERVER_ID/isScanning?key=$KEY&secret=$SECRET"`
+	KEY=$(Urlencode "$1")
+	SECRET=$(Urlencode "$2")
+	SERVER_ID=$(Urlencode "$3")
+
+	OUTPUT=$(wget -t2 -T6 -qO- "${MY_HOME}/extern/api/servers/$SERVER_ID/isScanning?key=$KEY&secret=$SECRET")
 
 	if [ "$OUTPUT" == "" ]
 	then
@@ -260,19 +285,21 @@ function ApiServerIsScanning {
 		exit 77
 	fi
 
-	local ERROR=`echo "$OUTPUT" | json | grep '^\["error"\]' | cut -f2-`
-	local SCANNING=`echo "$OUTPUT" | json | grep '^\["data"\]' | cut -f2-`
+	ERROR=$(echo "$OUTPUT" | json | grep '^\["error"\]' | cut -f2-)
+	SCANNING=$(echo "$OUTPUT" | json | grep '^\["data"\]' | cut -f2-)
 
-	echo ${ERROR:-false}
-	echo ${SCANNING:-false}
+	echo "${ERROR:-false}"
+	echo "${SCANNING:-false}"
 }
 
 function ApiUserChange {
-	local KEY=`Urlencode $1`
-	local SECRET=`Urlencode $2`
-	local EMAIL=`Urlencode $3`
+	local KEY, SECRET, EMAIL, OUTPUT, ERRORS, SUCCESS
 
-	local OUTPUT=`wget -t2 -T6 -qO- "${MY_HOME}/extern/api/user/update?key=$KEY&secret=$SECRET" --post-data "email=$EMAIL"`
+	KEY=$(Urlencode "$1")
+	SECRET=$(Urlencode "$2")
+	EMAIL=$(Urlencode "$3")
+
+	OUTPUT=$(wget -t2 -T6 -qO- "${MY_HOME}/extern/api/user/update?key=$KEY&secret=$SECRET" --post-data "email=$EMAIL")
 
 	if [ "$OUTPUT" == "" ]
 	then
@@ -280,18 +307,20 @@ function ApiUserChange {
 		exit 77
 	fi
 
-	local ERRORS=`echo "$OUTPUT" | json | grep '^\["errors"\]' | cut -f2-`
-	local SUCCESS=`echo "$OUTPUT" | json | grep '^\["success"\]' | cut -f2-`
+	ERRORS=$(echo "$OUTPUT" | json | grep '^\["errors"\]' | cut -f2-)
+	SUCCESS=$(echo "$OUTPUT" | json | grep '^\["success"\]' | cut -f2-)
 
-	echo ${ERRORS:-false}
-	echo ${SUCCESS:-false}
+	echo "${ERRORS:-false}"
+	echo "${SUCCESS:-false}"
 }
 
 function ApiUserRemove {
-	local KEY=`Urlencode $1`
-	local SECRET=`Urlencode $2`
+	local KEY, SECRET, OUTPUT
 
-	local OUTPUT=`wget -t2 -T6 -qO- "${MY_HOME}/extern/api/user/delete?key=$KEY&secret=$SECRET" --post-data "not=used"`
+	KEY=$(Urlencode "$1")
+	SECRET=$(Urlencode "$2")
+
+	OUTPUT=$(wget -t2 -T6 -qO- "${MY_HOME}/extern/api/user/delete?key=$KEY&secret=$SECRET" --post-data "not=used")
 
 	if [ "$OUTPUT" == "" ]
 	then
@@ -299,17 +328,19 @@ function ApiUserRemove {
 		exit 77
 	fi
 
-	#local ERRORS=`echo "$OUTPUT" | json | grep '^\["errors"\]' | cut -f2-`
-	#local SUCCESS=`echo "$OUTPUT" | json | grep '^\["success"\]' | cut -f2-`
+	#ERRORS=$(echo "$OUTPUT" | json | grep '^\["errors"\]' | cut -f2-)
+	#SUCCESS=$(echo "$OUTPUT" | json | grep '^\["success"\]' | cut -f2-)
 
-	#echo ${ERRORS:-false}
-	#echo ${SUCCESS:-false}
+	#echo "${ERRORS:-false}"
+	#echo "${SUCCESS:-false}"
 }
 
 function Urlencode {
-	local STRING="${1}"
-	local STRLEN=${#STRING}
-	local ENCODED=""
+	local STRING, STRLEN, ENCODED
+
+	STRING="${1}"
+	STRLEN=${#STRING}
+	ENCODED=""
 
 	for (( pos=0 ; pos<STRLEN ; pos++ )); do
 		c=${STRING:$pos:1}
@@ -320,9 +351,9 @@ function Urlencode {
 		ENCODED+="${o}"
 	done
 
-	echo ${ENCODED:-false}
+	echo "${ENCODED:-false}"
 }
 
 function Jsonspecialchars {
-	echo $1 | sed "s/'/\\\\\'/g"
+	echo "$1" | sed "s/'/\\\\\'/g"
 }
