@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 
-MY_HOME="http://demo.patrolserver.local"
+MY_HOME="https://demo.patrolserver.com"
 
 #!/usr/bin/env bash
 
@@ -231,7 +231,12 @@ COOKIES=$(mktemp)
 POSTFILE=$(mktemp)
 
 function ApiUserRegister {
-	local EMAIL, PASSWORD, OUTPUT, AUTHED, ERRORS, USER
+	local EMAIL
+	local PASSWORD
+	local OUTPUT
+	local AUTHED
+	local ERRORS
+	local USER
 
 	EMAIL=$(Urlencode "$1")
 	PASSWORD=$(Urlencode "$2")
@@ -254,7 +259,14 @@ function ApiUserRegister {
 }
 
 function ApiUserLogin {
-	local EMAIL, PASSWORD, OUTPUT, AUTHED, ERRORS, USER, CRITICAL, TYPE
+	local EMAIL
+	local PASSWORD
+	local OUTPUT
+	local AUTHED
+	local ERRORS
+	local USER
+	local CRITICAL
+	local TYPE
 
 	EMAIL=$(Urlencode "$1")
 	PASSWORD=$(Urlencode "$2")
@@ -281,7 +293,11 @@ function ApiUserLogin {
 }
 
 function ApiServerExists {
-	local HOST, OUTPUT, ERRORS, ERROR, EXISTS
+	local HOST
+	local OUTPUT
+	local ERRORS
+	local ERROR
+	local EXISTS
 
 	HOST=$(Urlencode "$1")
 
@@ -303,7 +319,12 @@ function ApiServerExists {
 }
 
 function ApiServerCreate {
-	local KEY, SECRET, HOSTNAME, OUTPUT, ID, ERROR
+	local KEY
+	local SECRET
+	local HOSTNAME
+	local OUTPUT
+	local ID
+	local ERROR
 
 	KEY=$(Urlencode "$1")
 	SECRET=$(Urlencode "$2")
@@ -325,7 +346,10 @@ function ApiServerCreate {
 }	
 
 function ApiServerToken {
-	local HOSTNAME, OUTPUT, TOKEN, ERROR
+	local HOSTNAME
+	local OUTPUT
+	local TOKEN
+	local ERROR
 	
 	HOSTNAME=$(Urlencode "$1")
 	
@@ -345,7 +369,12 @@ function ApiServerToken {
 }	
 
 function ApiVerifyServer {
-	local KEY, SECRET, SERVER_ID, TOKEN, OUTPUT, ERROR
+	local KEY
+	local SECRET
+	local SERVER_ID
+	local TOKEN
+	local OUTPUT
+	local ERROR
 
 	KEY=$(Urlencode "$1")
 	SECRET=$(Urlencode "$2")
@@ -366,7 +395,13 @@ function ApiVerifyServer {
 }	
 	
 function ApiServerPush {
-	local KEY, SECRET, SERVER_ID, BUCKET, EXPIRE, OUTPUT, ERROR
+	local KEY
+	local SECRET
+	local SERVER_ID
+	local BUCKET
+	local EXPIRE
+	local OUTPUT
+	local ERROR
 
 	KEY=$(Urlencode "$1")
 	SECRET=$(Urlencode "$2")
@@ -405,7 +440,9 @@ function ApiServerPush {
 }
 
 function ApiKeySecret {
-	local OUTPUT, KEY, SECRET
+	local OUTPUT
+	local KEY
+	local SECRET
 
 	OUTPUT=$(wget -t2 -T6 --load-cookies "$COOKIES" -qO- "${MY_HOME}/api/user/api_credentials")
 
@@ -435,7 +472,11 @@ function ApiCreateKeySecret {
 }
 
 function ApiServers {
-	local KEY, SECRET, OUTPUT, SERVERS, ERROR
+	local KEY
+	local SECRET
+	local OUTPUT
+	local SERVERS
+	local ERROR
 
 	KEY=$(Urlencode "$1")
 	SECRET=$(Urlencode "$2")
@@ -456,7 +497,12 @@ function ApiServers {
 }
 
 function ApiSoftware {
-	local KEY, SECRET, SERVER_ID, OUTPUT, SOFTWARE, ERROR
+	local KEY
+	local SECRET
+	local SERVER_ID
+	local OUTPUT
+	local SOFTWARE
+	local ERROR
 
 	KEY=$(Urlencode "$1")
 	SECRET=$(Urlencode "$2")
@@ -478,7 +524,11 @@ function ApiSoftware {
 }
 
 function ApiServerScan {
-	local KEY, SECRET, SERVER_ID, OUTPUT, ERROR
+	local KEY
+	local SECRET
+	local SERVER_ID
+	local OUTPUT
+	local ERROR
 
 	KEY=$(Urlencode "$1")
 	SECRET=$(Urlencode "$2")
@@ -498,7 +548,12 @@ function ApiServerScan {
 }
 
 function ApiServerIsScanning {
-	local KEY, SECRET, SERVER_ID, OUTPUT, ERROR, SCANNING
+	local KEY
+	local SECRET
+	local SERVER_ID
+	local OUTPUT 
+	local ERROR
+	local SCANNING
 
 	KEY=$(Urlencode "$1")
 	SECRET=$(Urlencode "$2")
@@ -520,7 +575,12 @@ function ApiServerIsScanning {
 }
 
 function ApiUserChange {
-	local KEY, SECRET, EMAIL, OUTPUT, ERRORS, SUCCESS
+	local KEY
+	local SECRET
+	local EMAIL
+	local OUTPUT
+	local ERRORS
+	local SUCCESS
 
 	KEY=$(Urlencode "$1")
 	SECRET=$(Urlencode "$2")
@@ -542,7 +602,9 @@ function ApiUserChange {
 }
 
 function ApiUserRemove {
-	local KEY, SECRET, OUTPUT
+	local KEY
+	local SECRET
+	local OUTPUT
 
 	KEY=$(Urlencode "$1")
 	SECRET=$(Urlencode "$2")
@@ -563,7 +625,9 @@ function ApiUserRemove {
 }
 
 function Urlencode {
-	local STRING, STRLEN, ENCODED
+	local STRING
+	local STRLEN
+	local ENCODED
 
 	STRING="${1}"
 	STRLEN=${#STRING}

@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 
-MY_HOME="http://demo.patrolserver.local"
+MY_HOME="https://demo.patrolserver.com"
 
 . env.sh
 . json.sh
