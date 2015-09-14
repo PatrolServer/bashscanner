@@ -1532,7 +1532,7 @@ function Cronjob {
 		crontab -l 2> /dev/null > "$CRON_TMP"
 		CRON_HOUR=$((RANDOM % 24))
 		CRON_MINUTE=$((RANDOM % 60))
-		echo "$CRON_MINUTE $CRON_HOUR * * * /bin/bash $HOME/.patrolserver/patrolserver --cmd --key=\"$KEY\" --secret=\"$SECRET\" --hostname=\"$HOSTNAME\"" >> $CRON_TMP
+		echo "$CRON_MINUTE $CRON_HOUR * * * /bin/bash $HOME/.patrolserver/patrolserver --cmd --key=\"$KEY\" --secret=\"$SECRET\" --hostname=\"$HOSTNAME\" > /dev/null" >> $CRON_TMP
 		crontab "$CRON_TMP"
 
 	    echo "> cronjob was set."
