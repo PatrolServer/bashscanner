@@ -717,6 +717,12 @@ function Args {
                     bucket=*)
                         BUCKET=${OPTARG#*=}
                         ;;
+                    cron)
+                        CRON="true"
+                        ;;
+                    cron=*)
+                        CRON=${OPTARG#*=}
+                        ;;  
                     *)
                         if [ "$OPTERR" = 1 ] && [ "${optspec:0:1}" != ":" ]; then
                             echo "Unknown option --${OPTARG}" >&2
@@ -864,6 +870,7 @@ CMD="false"
 SERVER_ID=""
 BUCKET="BashScanner"
 LOCATE=$(mktemp)
+CRON="ask"
 
 function Start {
 	SetEnv
@@ -1483,8 +1490,17 @@ function Cronjob {
 		return
 	fi
 
+	if [[ "$CRON" != "ask" ]] && [[ "$CRON" != "true" ]] 
+	then
+		return
+	fi
+
 	# Check if user want a cronjob
 	YN="..."
+	if [[ "$CRON" == "true" ]] 
+	then
+	 	YN="y"
+	fi
 	while [[ "$YN" != "n" ]] && [[ $YN != "y" ]]; do
 		read -rp "> It is advisable to check your server daily, should we set a cronjob (y/n)? " YN
  	done
