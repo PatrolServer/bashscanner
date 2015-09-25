@@ -534,9 +534,9 @@ function OutputBlock {
 
 		LINE=$(echo "$LINE" | json)
 		CANONICAL_NAME=$(echo "$LINE" | grep '^\["canonical_name"\]' | cut -f2- | sed -e 's/^"//'  -e 's/"$//')
-		CANONICAL_NAME_GREP=$(echo "$CANONICAL_NAME" | sed -e 's/[]\/$*.^|[]/\\\&/g')
+		CANONICAL_NAME_GREP=$(echo "$CANONICAL_NAME" | sed -e 's/[]\/$*.^|[]/\\&/g')
 		LOCATION=$(echo "$LINE" | grep '^\["location"\]' | cut -f2- | sed -e 's/^"//'  -e 's/"$//')
-		LOCATION_GREP=$(echo "$LOCATION" | sed -e 's/[]\/$*.^|[]/\\\&/g')
+		LOCATION_GREP=$(echo "$LOCATION" | sed -e 's/[]\/$*.^|[]/\\&/g')
 
 		# Print out the location when it has changed
 		if [[ "$PREV_LOCATION" != "$LOCATION" ]] && [[ "$LOCATION" != '\/' ]]
