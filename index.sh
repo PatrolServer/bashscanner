@@ -9,6 +9,7 @@ MY_HOME="https://demo.patrolserver.com"
 . scanners/composer.sh
 . scanners/dpkg.sh
 . scanners/drupal.sh
+. scanners/npm.sh
 
 VERSION="1.0.0"
 EMAIL=""
@@ -455,6 +456,7 @@ function Scan {
 	ComposerSoftware
 	DpkgSoftware
 	DrupalSoftware
+	NpmSoftware
 
 	if [[ "$CMD" == "false" ]] 
 	then
