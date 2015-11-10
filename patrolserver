@@ -19,12 +19,12 @@
 
 # Get the runner
 RUNNER=`mktemp`
-wget -O $RUNNER "https://raw.githubusercontent.com/PatrolServer/bashScanner/master/compiled.sh" 2> /dev/null
+wget -O $RUNNER "https://raw.githubusercontent.com/PatrolServer/bashScanner/master/compiled.sh" --no-check-certificate 2> /dev/null
 chmod +x $RUNNER
 
 # Get the signature
 SIGNATURE=`mktemp`
-wget -O $SIGNATURE "https://raw.githubusercontent.com/PatrolServer/bashScanner/master/compiled.sign" 2> /dev/null
+wget -O $SIGNATURE "https://raw.githubusercontent.com/PatrolServer/bashScanner/master/compiled.sign" --no-check-certificate 2> /dev/null
 
 # Public key
 PUBLIC_KEY=`mktemp`
