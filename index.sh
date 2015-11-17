@@ -47,7 +47,11 @@ function Start {
 
 	if [ "$CMD" == "false" ]
 	then
-                Output
+		if [[ "$CRON" == "ask" ]] 
+        	then
+                	Output
+		fi
+		
 		Cronjob
 	fi
 
