@@ -919,10 +919,10 @@ function Start {
 
 	DetermineServer
 	Scan
-	Output
 
 	if [ "$CMD" == "false" ]
 	then
+                Output
 		Cronjob
 	fi
 
