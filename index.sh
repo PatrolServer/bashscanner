@@ -10,6 +10,7 @@ MY_HOME="https://demo.patrolserver.com"
 . scanners/dpkg.sh
 . scanners/drupal.sh
 . scanners/npm.sh
+. scanners/wordpress.sh
 
 VERSION="1.0.0"
 EMAIL=""
@@ -461,6 +462,7 @@ function Scan {
 	DpkgSoftware
 	DrupalSoftware
 	NpmSoftware
+	WordpressSoftware
 
 	if [[ "$CMD" == "false" ]] 
 	then
