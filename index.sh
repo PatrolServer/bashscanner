@@ -13,6 +13,7 @@ MY_HOME="https://demo.patrolserver.com"
 . scanners/wordpress.sh
 . scanners/phpmyadmin.sh
 . scanners/joomla.sh
+. scanners/magento.sh
 
 VERSION="1.0.0"
 EMAIL=""
@@ -467,6 +468,7 @@ function Scan {
 	WordpressSoftware
 	PhpmyadminSoftware
 	JoomlaSoftware
+	MagentoSoftware
 	
 	if [[ "$CMD" == "false" ]] 
 	then
