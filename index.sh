@@ -11,6 +11,7 @@ MY_HOME="https://demo.patrolserver.com"
 . scanners/drupal.sh
 . scanners/npm.sh
 . scanners/wordpress.sh
+. scanners/phpmyadmin.sh
 
 VERSION="1.0.0"
 EMAIL=""
@@ -463,6 +464,7 @@ function Scan {
 	DrupalSoftware
 	NpmSoftware
 	WordpressSoftware
+	PhpmyadminSoftware
 
 	if [[ "$CMD" == "false" ]] 
 	then
