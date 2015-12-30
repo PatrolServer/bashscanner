@@ -12,6 +12,7 @@ MY_HOME="https://demo.patrolserver.com"
 . scanners/npm.sh
 . scanners/wordpress.sh
 . scanners/phpmyadmin.sh
+. scanners/joomla.sh
 
 VERSION="1.0.0"
 EMAIL=""
@@ -465,7 +466,8 @@ function Scan {
 	NpmSoftware
 	WordpressSoftware
 	PhpmyadminSoftware
-
+	JoomlaSoftware
+	
 	if [[ "$CMD" == "false" ]] 
 	then
 	 	echo "> Scanning for newest releases and exploits, can take serveral minutes..."
