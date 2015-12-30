@@ -920,6 +920,95 @@ function WordpressSoftware {
         done
     done
 }
+#!/usr/bin/env bash
+
+function PhpmyadminSoftware {
+    FILES=`locate --database=$LOCATE "phpmyadmin.css.php" 2> /dev/null`
+	for FILE in $FILES; do
+	
+		# Get root path
+		local DIR=`dirname $FILE`
+		local VERSION_FILE="${DIR}/libraries/Config.php"
+
+		local VERSION=""
+		if [ -f $VERSION_FILE ]
+		then
+			local VERSION=`cat "$VERSION_FILE" | grep "\\$this->set('PMA_VERSION', '[0-9.]*')" | grep -o "[0-9.]*" 2> /dev/null` 
+		fi
+
+		if [ "$VERSION" == "" ]
+		then
+			local VERSION_FILE="${DIR}/libraries/Config.class.php"
+			if [ -f $VERSION_FILE ]
+			then
+			    local VERSION=`cat "$VERSION_FILE" | grep "\\$this->set('PMA_VERSION', '[0-9.]*')" | grep -o "[0-9.]*" 2> /dev/null` 
+			fi
+		fi
+
+		echo -e "$DIR\t\tphpmyadmin\t$VERSION" >> $SOFTWARE
+		
+    done
+}
+#!/usr/bin/env bash
+
+function JoomlaSoftware {
+    FILES=`locate --database=$LOCATE "authentication/joomla/joomla.xml" | sort | uniq 2> /dev/null`
+	for FILE in $FILES; do
+
+		# Get root path
+		local DIR=`dirname $FILE`
+		local DIR=`cd "$DIR/../../../"; pwd`
+		local VERSION_FILE="${DIR}/libraries/cms/version/version.php"
+
+		local VERSION=""
+		if [ -f $VERSION_FILE ]
+		then
+
+			local VERSION_BRANCH=`cat "$VERSION_FILE" | grep "RELEASE = '[0-9.]*';" | grep -o "[0-9.]*" 2> /dev/null` 
+			local VERSION_SECURITY=`cat "$VERSION_FILE" | grep "DEV_LEVEL = '[0-9]*';" | grep -o "[0-9.]*" 2> /dev/null`
+			
+			if [[ "$VERSION_BRANCH" != "" && "$VERSION_SECURITY" != "" ]]
+			then
+    			local VERSION="$VERSION_BRANCH.$VERSION_SECURITY" 
+            fi
+		fi
+
+		echo -e "$DIR\t\tjoomla\t$VERSION" >> $SOFTWARE
+		
+    done
+}
+#!/usr/bin/env bash
+
+function MagentoSoftware {
+    FILES=`locate --database=$LOCATE "app/Mage.php" 2> /dev/null`
+	for FILE in $FILES; do
+
+		# Get root path
+		local DIR=`dirname $FILE`
+		local DIR=`cd "$DIR/../"; pwd`
+		local VERSION_FILE="${DIR}/app/Mage.php"
+
+		local VERSION=""
+		if [ -f $VERSION_FILE ]
+		then
+
+			local VERSION_MAJOR=`cat "$VERSION_FILE" | grep "'major' *=> '[0-9.]*'" | grep -o "[0-9.]*" 2> /dev/null` 
+			local VERSION_MINOR=`cat "$VERSION_FILE" | grep "'minor' *=> '[0-9]*'" | grep -o "[0-9.]*" 2> /dev/null`
+			local VERSION_REVISION=`cat "$VERSION_FILE" | grep "'revision' *=> '[0-9]*'" | grep -o "[0-9.]*" 2> /dev/null`
+			local VERSION_PATCH=`cat "$VERSION_FILE" | grep "'patch' *=> '[0-9]*'" | grep -o "[0-9.]*" 2> /dev/null`
+			
+			echo $VERSION_MAJOR
+			
+			if [[ "$VERSION_MAJOR" != "" && "$VERSION_MINOR" != "" && "$VERSION_REVISION" != "" && "$VERSION_PATCH" != "" ]]
+			then
+    			local VERSION="$VERSION_MAJOR.$VERSION_MINOR.$VERSION_REVISION.$VERSION_PATCH" 
+            fi
+		fi
+
+		echo -e "$DIR\t\tmagentoCommerce\t$VERSION" >> $SOFTWARE
+		
+    done
+}
 
 VERSION="1.0.0"
 EMAIL=""
@@ -1372,7 +1461,10 @@ function Scan {
 	DrupalSoftware
 	NpmSoftware
 	WordpressSoftware
-
+	PhpmyadminSoftware
+	JoomlaSoftware
+	MagentoSoftware
+	
 	if [[ "$CMD" == "false" ]] 
 	then
 	 	echo "> Scanning for newest releases and exploits, can take serveral minutes..."
