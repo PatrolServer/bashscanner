@@ -24,18 +24,19 @@ The script will ask you if it should set a cronjob, this simply means your serve
 
 ## Supported software
 The Bash Scanner currently detects the following software for updates (keep in mind, this list is an ongoing process and more software packages will be added in the future):
-* Debian
-* Ubuntu
+* Debian* + dotdeb
+* Ubuntu*
 * OpenSSL*
 * OpenSSH*
 * cPanel
-* Drupal*
 * Nginx*
-* Composer modules
 * Laravel
 * Apache*
 * PHP*
 * BIND*
+* Drupal + modules
+* Composer modules
+* Wordpress + plugins
 
 *: This software also returns the exploits information.
 
