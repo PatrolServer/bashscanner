@@ -397,25 +397,40 @@ function ApiUserRemove {
 	#echo "${SUCCESS:-false}"
 }
 
+URLENCODE_SED=$(mktemp)
+cat > $URLENCODE_SED <<- EOF
+s:%:%25:g
+s: :%20:g
+s:<:%3C:g
+s:>:%3E:g
+s:#:%23:g
+s:{:%7B:g
+s:}:%7D:g
+s:|:%7C:g
+s:\^:%5E:g
+s:~:%7E:g
+s:\[:%5B:g
+s:\]:%5D:g
+s:\`:%60:g
+s:;:%3B:g
+s:/:%2F:g
+s:?:%3F:g
+s^:^%3A^g
+s:@:%40:g
+s:=:%3D:g
+s:&:%26:g
+s:\!:%21:g
+s:\*:%2A:g
+EOF
+
 function Urlencode {
 	local STRING
-	local STRLEN
-	local ENCODED
+        local ENCODED
 
 	STRING="${1}"
-	STRLEN=${#STRING}
-	ENCODED=""
+        ENCODED=$(echo "$STRING" | sed -f $URLENCODE_SED)
 
-	for (( pos=0 ; pos<STRLEN ; pos++ )); do
-		c=${STRING:$pos:1}
-		case "$c" in
-			[-_.~a-zA-Z0-9] ) o="${c}" ;;
-			* )               printf -v o '%%%02x' "'$c"
-		esac
-		ENCODED+="${o}"
-	done
-
-	echo "${ENCODED:-false}"
+        echo "$ENCODED"
 }
 
 function Jsonspecialchars {
