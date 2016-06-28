@@ -7,14 +7,15 @@ function ApiUserRegister {
 	local EMAIL
 	local PASSWORD
 	local OUTPUT
-	local AUTHED
-	local ERRORS
+	local ERROR
 	local USER
+	local KEY
+	local SECRET
 
 	EMAIL=$(Urlencode "$1")
 	PASSWORD=$(Urlencode "$2")
 
-	OUTPUT=$(wget -t2 -T6 --keep-session-cookies --save-cookies "$COOKIES" -qO- "${MY_HOME}/api/user/register" --post-data "email=$EMAIL&password=$PASSWORD&password_confirmation=$PASSWORD")
+	OUTPUT=$(wget -t2 -T6 --header="X-PS-Bash: 1" -qO- "${MY_HOME}/extern/api/users" --post-data "email=$EMAIL&password=$PASSWORD&password_confirmation=$PASSWORD")
 
 	if [ "$OUTPUT" == "" ]
 	then
@@ -22,29 +23,30 @@ function ApiUserRegister {
 		exit 77
 	fi
 
-	AUTHED=$(echo "$OUTPUT" | json | grep '^\["authed"\]' | cut -f2-)
-	ERRORS=$(echo "$OUTPUT" | json | grep '^\["errors",[0-9]\]' | cut -f2-)
-	USER=$(echo "$OUTPUT" | json | grep '^\["user"\]' | cut -f2-)
+	ERROR=$(echo "$OUTPUT" | json | grep '^\["error","code"\]' | cut -f2-)
+	USER=$(echo "$OUTPUT" | json | grep '^\["data","user"\]' | cut -f2-)
+	KEY=$(echo "$OUTPUT" | json | grep '^\["data","api_credentials","key"\]' | cut -f2-)
+	SECRET=$(echo "$OUTPUT" | json | grep '^\["data","api_credentials","secret"\]' | cut -f2-)
 
-	echo "${AUTHED:-false}"
-	echo "${ERRORS:-false}"
+	echo "${ERROR:-false}"
 	echo "${USER:-false}"
+	echo "${KEY:-false}"
+	echo "${SECRET:-false}"
 }
 
 function ApiUserLogin {
 	local EMAIL
 	local PASSWORD
 	local OUTPUT
-	local AUTHED
-	local ERRORS
+	local ERROR
 	local USER
-	local CRITICAL
-	local TYPE
+	local KEY
+	local SECRET
 
 	EMAIL=$(Urlencode "$1")
 	PASSWORD=$(Urlencode "$2")
 
-	OUTPUT=$(wget -t2 -T6 --keep-session-cookies --save-cookies "$COOKIES" -qO- "${MY_HOME}/api/user/login" --post-data "email=$EMAIL&password=$PASSWORD")
+	OUTPUT=$(wget -t2 -T6 --header="X-PS-Bash: 1" -qO- "${MY_HOME}/api/user/request_api_credentials" --post-data "email=$EMAIL&password=$PASSWORD")
 
 	if [ "$OUTPUT" == "" ]
 	then
@@ -52,17 +54,15 @@ function ApiUserLogin {
 		exit 77
 	fi
 
-	AUTHED=$(echo "$OUTPUT" | json | grep '^\["authed"\]' | cut -f2-)
-	ERRORS=$(echo "$OUTPUT" | json | grep '^\["errors",[0-9]\]' | cut -f2-)
+	ERROR=$(echo "$OUTPUT" | json | grep '^\["errors","code"\]' | cut -f2-)
 	USER=$(echo "$OUTPUT" | json | grep '^\["user"\]' | cut -f2-)
-	CRITICAL=$(echo "$OUTPUT" | json | grep '^\["critical"\]' | cut -f2-)
-	TYPE=$(echo "$OUTPUT" | json | grep '^\["type"\]' | cut -f2-)
+	KEY=$(echo "$OUTPUT" | json | grep '^\["data","api_credentials","key"\]' | cut -f2-)
+	SECRET=$(echo "$OUTPUT" | json | grep '^\["data","api_credentials","key"\]' | cut -f2-)
 
-	echo "${CRITICAL:-false}"
-	echo "${TYPE:-false}"
-	echo "${AUTHED:-false}"
-	echo "${ERRORS:-false}"
+	echo "${ERROR:-false}"
 	echo "${USER:-false}"
+	echo "${KEY}:-false}"
+	echo "${SECRET}:-false}"
 }
 
 function ApiServerExists {
@@ -74,7 +74,7 @@ function ApiServerExists {
 
 	HOST=$(Urlencode "$1")
 
-	OUTPUT=$(wget -t2 -T6 -qO- "${MY_HOME}/api/server/exists?host=$HOST")
+	OUTPUT=$(wget -t2 -T6 --header="X-PS-Bash: 1" -qO- "${MY_HOME}/api/server/exists?host=$HOST")
 
 	if [ "$OUTPUT" == "" ]
 	then
@@ -103,7 +103,7 @@ function ApiServerCreate {
 	SECRET=$(Urlencode "$2")
 	HOSTNAME=$(Urlencode "$3")
 	
-	OUTPUT=$(wget -t2 -T6 -qO- "${MY_HOME}/extern/api/servers?key=$KEY&secret=$SECRET" --post-data "domain=$HOSTNAME")
+	OUTPUT=$(wget -t2 -T6 --header="X-PS-Bash: 1" -qO- "${MY_HOME}/extern/api/servers?key=$KEY&secret=$SECRET" --post-data "domain=$HOSTNAME")
 
 	if [ "$OUTPUT" == "" ]
 	then
@@ -126,7 +126,7 @@ function ApiServerToken {
 	
 	HOSTNAME=$(Urlencode "$1")
 	
-	OUTPUT=$(wget -t2 -T6 -qO- "${MY_HOME}/extern/api/request_verification_token?domain=$HOSTNAME")
+	OUTPUT=$(wget -t2 -T6 --header="X-PS-Bash: 1" -qO- "${MY_HOME}/extern/api/request_verification_token?domain=$HOSTNAME")
 
 	if [ "$OUTPUT" == "" ]
 	then
@@ -154,7 +154,7 @@ function ApiVerifyServer {
 	SERVER_ID=$(Urlencode "$3")
 	TOKEN=$(Urlencode "$4")
 	
-	OUTPUT=$(wget -t2 -T6 -qO- "${MY_HOME}/extern/api/servers/${SERVER_ID}/verify?key=$KEY&secret=$SECRET" --post-data "token=$TOKEN")
+	OUTPUT=$(wget -t2 -T6 --header="X-PS-Bash: 1" -qO- "${MY_HOME}/extern/api/servers/${SERVER_ID}/verify?key=$KEY&secret=$SECRET" --post-data "token=$TOKEN")
 
 	if [ "$OUTPUT" == "" ]
 	then
@@ -199,7 +199,7 @@ function ApiServerPush {
 	echo "$SOFTWARE" >> "$POSTFILE"
 
 
-	OUTPUT=$(wget -t2 -T6 -qO- "${MY_HOME}/extern/api/servers/${SERVER_ID}/software_bucket/$BUCKET?key=$KEY&secret=$SECRET&scope=silent" --post-file $POSTFILE)
+	OUTPUT=$(wget -t2 -T6 --header="X-PS-Bash: 1" -qO- "${MY_HOME}/extern/api/servers/${SERVER_ID}/software_bucket/$BUCKET?key=$KEY&secret=$SECRET&scope=silent" --post-file $POSTFILE)
 
 	if [ "$OUTPUT" == "" ]
 	then
@@ -212,38 +212,6 @@ function ApiServerPush {
 	echo "${ERROR:-false}"
 }
 
-function ApiKeySecret {
-	local OUTPUT
-	local KEY
-	local SECRET
-
-	OUTPUT=$(wget -t2 -T6 --load-cookies "$COOKIES" -qO- "${MY_HOME}/api/user/api_credentials")
-
-	if [ "$OUTPUT" == "" ]
-	then
-		echo "> patrolserver.com is not reachable, contact us (8)" >&2
-		exit 77
-	fi
-
-	KEY=$(echo "$OUTPUT" | json | grep '^\[0,"key"\]' | cut -f2- | sed -e 's/^"//'  -e 's/"$//')
-	SECRET=$(echo "$OUTPUT" | json | grep '^\[0,"secret"\]' | cut -f2- | sed -e 's/^"//'  -e 's/"$//')
-
-	echo "${KEY:-false}"
-	echo "${SECRET:-false}"
-}
-
-function ApiCreateKeySecret {
-	local OUTPUT
-
-	OUTPUT=$(wget -t2 -T6 --load-cookies "$COOKIES" -qO- "${MY_HOME}/api/user/api_credentials" --post-data "not=used")
-
-	if [ "$OUTPUT" == "" ]
-	then
-		echo "> patrolserver.com is not reachable, contact us (9)" >&2
-		exit 77
-	fi
-}
-
 function ApiServers {
 	local KEY
 	local SECRET
@@ -254,7 +222,7 @@ function ApiServers {
 	KEY=$(Urlencode "$1")
 	SECRET=$(Urlencode "$2")
 
-	OUTPUT=$(wget -t2 -T6 -qO- "${MY_HOME}/extern/api/servers?key=$KEY&secret=$SECRET")
+	OUTPUT=$(wget -t2 -T6 --header="X-PS-Bash: 1" -qO- "${MY_HOME}/extern/api/servers?key=$KEY&secret=$SECRET")
 
 	if [ "$OUTPUT" == "" ]
 	then
@@ -281,7 +249,7 @@ function ApiSoftware {
 	SECRET=$(Urlencode "$2")
 	SERVER_ID=$(Urlencode "$3")
 
-	OUTPUT=$(wget -t2 -T6 -qO- "${MY_HOME}/extern/api/servers/$SERVER_ID/software?key=$KEY&secret=$SECRET&scope=exploits")
+	OUTPUT=$(wget -t2 -T6 --header="X-PS-Bash: 1" -qO- "${MY_HOME}/extern/api/servers/$SERVER_ID/software?key=$KEY&secret=$SECRET&scope=exploits")
 
 	if [ "$OUTPUT" == "" ]
 	then
@@ -332,7 +300,7 @@ function ApiServerIsScanning {
 	SECRET=$(Urlencode "$2")
 	SERVER_ID=$(Urlencode "$3")
 
-	OUTPUT=$(wget -t2 -T6 -qO- "${MY_HOME}/extern/api/servers/$SERVER_ID/isScanning?key=$KEY&secret=$SECRET")
+	OUTPUT=$(wget -t2 -T6 --header="X-PS-Bash: 1" -qO- "${MY_HOME}/extern/api/servers/$SERVER_ID/isScanning?key=$KEY&secret=$SECRET")
 
 	if [ "$OUTPUT" == "" ]
 	then
@@ -359,7 +327,7 @@ function ApiUserChange {
 	SECRET=$(Urlencode "$2")
 	EMAIL=$(Urlencode "$3")
 
-	OUTPUT=$(wget -t2 -T6 -qO- "${MY_HOME}/extern/api/user/update?key=$KEY&secret=$SECRET" --post-data "email=$EMAIL")
+	OUTPUT=$(wget -t2 -T6 --header="X-PS-Bash: 1" -qO- "${MY_HOME}/extern/api/user/update?key=$KEY&secret=$SECRET" --post-data "email=$EMAIL")
 
 	if [ "$OUTPUT" == "" ]
 	then
@@ -382,7 +350,7 @@ function ApiUserRemove {
 	KEY=$(Urlencode "$1")
 	SECRET=$(Urlencode "$2")
 
-	OUTPUT=$(wget -t2 -T6 -qO- "${MY_HOME}/extern/api/user/delete?key=$KEY&secret=$SECRET" --post-data "not=used")
+	OUTPUT=$(wget -t2 -T6 --header="X-PS-Bash: 1" -qO- "${MY_HOME}/extern/api/user/delete?key=$KEY&secret=$SECRET" --post-data "not=used")
 
 	if [ "$OUTPUT" == "" ]
 	then
