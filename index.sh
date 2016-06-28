@@ -42,7 +42,7 @@ function Start {
 
 	DetermineHostname
 	if [ "$KEY" == "" ] || [ "$SECRET" == "" ]
-	then	
+	then
 		Account
 	fi
 
@@ -55,7 +55,7 @@ function Start {
         	then
                 	Output
 		fi
-		
+
 		Cronjob
 	fi
 
@@ -75,21 +75,22 @@ function Login {
 
 			LOGIN_RET=($(ApiUserLogin "$EMAIL" "$PASSWORD"))
 
-			local LOGIN_CRITICAL=${LOGIN_RET[0]}
-			local LOGIN_TYPE=${LOGIN_RET[1]}
-			local LOGIN_AUTHED=${LOGIN_RET[2]}
-			local LOGIN_ERRORS=${LOGIN_RET[3]}
-			local LOGIN_USER=${LOGIN_RET[4]}
+			local LOGIN_ERROR=${LOGIN_RET[0]}
+			local LOGIN_USER=${LOGIN_RET[1]}
+			local LOGIN_KEY=${LOGIN_RET[2]}
+			local LOGIN_SECRET=${LOGIN_RET[3]}
 
-			if [ "$LOGIN_AUTHED" == "true" ]
+			if [ "$LOGIN_ERROR" == "false" ]
 			then
+				StoreKeySecret "$LOGIN_KEY" "$LOGIN_SECRET"
 				return
-			elif [ "$LOGIN_CRITICAL" == "true" ]
-			then
-				echo "> Your login was blocked for security issues, a mail was send to unblock yourself. After clicking on the link, you can try again." >&2
-			elif [ "$LOGIN_TYPE" == '"to_much_tries"' ]
+			elif [ "$LOGIN_ERROR" == '"too_many_failed_attempts"' ]
 			then
 				echo "> Your login was blocked for security issues, please try again in 10 min." >&2
+				exit 77
+			elif [ "$LOGIN_ERROR" == '"different_country"' ]
+			then
+				echo "> Your login is temporarily blocked for security measurements. Check your email for further instructions." >&2
 				exit 77
 			else
 				echo "> Wrong email and/or password! Try again." >&2
@@ -100,37 +101,37 @@ function Login {
 	else
 		if [ "$EMAIL" == "" ]
 		then
-			echo "Specify login credentials" >&2
+			echo "Specify login credentials." >&2
 			exit 77
 		fi
 
 		if [ "$PASSWORD" == "" ]
 		then
-			echo "Specify login credentials" >&2
+			echo "Specify login credentials." >&2
 			exit 77
 		fi
 
 		LOGIN_RET=($(ApiUserLogin "$EMAIL" "$PASSWORD"))
 
-		local LOGIN_CRITICAL=${LOGIN_RET[0]}
-		local LOGIN_TYPE=${LOGIN_RET[1]}
-		local LOGIN_AUTHED=${LOGIN_RET[2]}
-		local LOGIN_ERRORS=${LOGIN_RET[3]}
-		local LOGIN_USER=${LOGIN_RET[4]}
+		local LOGIN_ERROR=${LOGIN_RET[0]}
+                local LOGIN_USER=${LOGIN_RET[1]}
+                local LOGIN_KEY=${LOGIN_RET[2]}
+                local LOGIN_SECRET=${LOGIN_RET[3]}
 
-		if [ "$LOGIN_AUTHED" == "true" ]
+		if [ "$LOGIN_ERROR" == "false" ]
 		then
+			StoreKeySecret "$LOGIN_KEY" "$LOGIN_SECRET"
 			return
-		elif [ "$LOGIN_CRITICAL" == "true" ]
+		elif [ "$LOGIN_ERROR" == "8" ]
 		then
 			echo "Your login was blocked for security issues (Unblock mail send)." >&2
 			exit 77
-		elif [ "$LOGIN_TYPE" == '"to_much_tries"' ]
+		elif [ "$LOGIN_ERROR" == "9" ]
 		then
-			echo "Your login was blocked for security issues (Unblock mail send)" >&2
+			echo "Your login was blocked for security issues (Unblock mail send)." >&2
 			exit 77
 		else
-			echo "Login credentials incorrect" >&2
+			echo "Login credentials incorrect." >&2
 			exit 77
 		fi
 	fi
@@ -138,19 +139,39 @@ function Login {
   	exit 77;
 }
 
+function StoreKeySecret {
+	KEY="$1"
+	SECRET="$2"
+
+	if [ "$KEY" == "false" ]
+	then
+		echo "> Internal error, could not get key/secret combo." >&2
+		exit 77
+	fi
+
+	if [ "$SECRET" == "false" ]
+	then
+		echo "> Internal error, could not get key/secret combo." >&2
+		exit 77
+	fi
+}
+
 function Register {
 	REGISTER_RET=($(ApiUserRegister "$EMAIL" "$PASSWORD"))
 
-	local REGISTER_AUTHED=${REGISTER_RET[0]}
-	local REGISTER_ERRORS=${REGISTER_RET[1]}
-	local REGISTER_USER=${REGISTER_RET[2]}
+	local REGISTER_ERROR=${REGISTER_RET[0]}
+	local REGISTER_USER=${REGISTER_RET[1]}
+	local REGISTER_KEY=${REGISTER_RET[2]}
+	local REGISTER_SECRET=${REGISTER_RET[3]}
 
-	if [ "$REGISTER_AUTHED" == "true" ]
+	StoreKeySecret "$REGISTER_KEY" "$REGISTER_SECRET"
+
+	if [ "$REGISTER_ERROR" == "false" ]
 	then
 		echo "success"
 		return
 	else
-		if [[ "$REGISTER_ERRORS" =~ "The email has already been taken" ]]
+		if [[ "$REGISTER_ERROR" == "82" ]]
 		then
 			echo "email"
 			return
@@ -196,11 +217,11 @@ function Hostname {
 	then
 		if [ "$IP" == "" ]
 		then
-			echo "Hostname not found (Please enter with command)" >&2
+			echo "Hostname not found. (Please enter with command)" >&2
 			exit 77;
 		elif [[ "$IP" != "$EXTERNAL_IP" ]]
 		then
-			echo "Hostname doesn't resolve to external IP of this server" >&2
+			echo "Hostname doesn't resolve to external IP of this server." >&2
 			exit 77;
 		fi
 	fi
@@ -230,44 +251,8 @@ function Hostname {
 		fi
 	done
 
-	echo "> Could not determine hostname"  >&2
+	echo "> Could not determine hostname."  >&2
   	exit 77;
-}
-
-function GetKeySecret {
-	if [[ "$KEY" != "" ]] && [[ "$SECRET" != "" ]]
-	then
-		return
-	fi
-
-	# Get the first KEY/SECRET combo
-	KEY_SECRET_RET=($(ApiKeySecret))
-
-	KEY=${KEY_SECRET_RET[0]}
-	SECRET=${KEY_SECRET_RET[1]}
-
-	# API access isn't created yet, so create.
-	if [[ "$KEY" == "false" ]] || [[ "$SECRET" == "false" ]]
-	then	
-		ApiCreateKeySecret > /dev/null
-
-		KEY_SECRET_RET=($(ApiKeySecret))
-
-		KEY=${KEY_SECRET_RET[0]}
-		SECRET=${KEY_SECRET_RET[1]}
-	fi
-
-	if [ "$KEY" == "false" ]
-	then
-		echo "> Internal error, could not get key/secret combo" >&2
-		exit 77
-	fi
-
-	if [ "$SECRET" == "false" ]
-	then
-		echo "> Internal error, could not get key/secret combo" >&2
-		exit 77
-	fi
 }
 
 function DetermineHostname {
@@ -285,7 +270,7 @@ function DetermineHostname {
 		SERVER_EXISTS=${SERVER_EXISTS_RET[0]}
 		SERVER_EXISTS_ERROR_TYPE=${SERVER_EXISTS_RET[1]}
 		SERVER_EXISTS_ERRORS=${SERVER_EXISTS_RET[2]}
-		
+
 		if [ "$SERVER_EXISTS_ERROR_TYPE" == "false" ]
 		then
 			return
@@ -295,7 +280,6 @@ function DetermineHostname {
 		then
 			echo "> An account was already created for this host or a subdomain of this host. Please login into your patrolserver.com account or add the key/secret when calling this command." >&2
 			Login
-			GetKeySecret
 
 		# Hostname could not be found.
 		elif [ "$SERVER_EXISTS_ERROR_TYPE" == "2" ]
@@ -315,16 +299,15 @@ function Account {
 	if [[ "$EMAIL" != "" ]] && [[ "$PASSWORD" != "" ]]
 	then
 		Login
-		GetKeySecret
 		return;
 	fi
-	
-	if [[ "$CMD" != "false" ]] 
+
+	if [[ "$CMD" != "false" ]]
 	then
 		YN="n"
 	else
 		echo "> You can use this tool 5 times without account." 
-	
+
 		YN="..."
 		while [[ "$YN" != "n" ]] && [[ $YN != "y" ]]; do
 			read -rp "> Do you want to create an account (y/n)? " YN
@@ -344,12 +327,9 @@ function Account {
 			exit 77
 		fi
 
-		GetKeySecret
-
 	else
 		for I in 1 2 3
 		do
-		
 			# Ask what account should be created.
 			echo -en "\tYour email: "
 			read -r EMAIL
@@ -366,7 +346,6 @@ function Account {
 				REGISTER_RET=$(Register "$EMAIL" "$PASSWORD")
 				if [ "$REGISTER_RET" == "success" ]
 				then
-					GetKeySecret
 					return
 				fi
 			fi
