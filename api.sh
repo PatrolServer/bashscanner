@@ -389,6 +389,7 @@ s:=:%3D:g
 s:&:%26:g
 s:\!:%21:g
 s:\*:%2A:g
+s:\+:%2B:g
 EOF
 
 function Urlencode {
