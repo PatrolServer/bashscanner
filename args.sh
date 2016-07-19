@@ -73,10 +73,10 @@ function Args {
                     cron=*)
                         CRON=${OPTARG#*=}
                         ;;
-                    endpoint)
-                        MY_HOME="https://app.patrolserver.com"
+                    target)
+                        MY_HOME="${!OPTIND}"; OPTIND=$(( $OPTIND + 1 ))
                         ;;
-                    endpoint=*)
+                    target=*)
                         MY_HOME=${OPTARG#*=}
                         ;;
                     *)
@@ -117,7 +117,7 @@ function Args {
             b)
                 BUCKET=${OPTARG}
                 ;;
-            ep)
+            t)
                 MY_HOME=${OPTARG}
                 ;;
             *)
