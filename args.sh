@@ -72,7 +72,13 @@ function Args {
                         ;;
                     cron=*)
                         CRON=${OPTARG#*=}
-                        ;;  
+                        ;;
+                    target)
+                        MY_HOME="${!OPTIND}"; OPTIND=$(( $OPTIND + 1 ))
+                        ;;
+                    target=*)
+                        MY_HOME=${OPTARG#*=}
+                        ;;
                     *)
                         if [ "$OPTERR" = 1 ] && [ "${optspec:0:1}" != ":" ]; then
                             echo "Unknown option --${OPTARG}" >&2
@@ -110,6 +116,9 @@ function Args {
                 ;;
             b)
                 BUCKET=${OPTARG}
+                ;;
+            t)
+                MY_HOME=${OPTARG}
                 ;;
             *)
                 if [ "$OPTERR" != 1 ] || [ "${optspec:0:1}" = ":" ]; then
