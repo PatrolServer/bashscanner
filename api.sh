@@ -23,10 +23,10 @@ function ApiUserRegister {
 		exit 77
 	fi
 
-	ERROR=$(echo "$OUTPUT" | json | grep '^\["error","code"\]' | cut -f2-)
+	ERROR=$(echo "$OUTPUT" | json | grep '^\["error"\]' | cut -f2-)
 	USER=$(echo "$OUTPUT" | json | grep '^\["data","user"\]' | cut -f2-)
-	KEY=$(echo "$OUTPUT" | json | grep '^\["data","api_credentials","key"\]' | cut -f2-)
-	SECRET=$(echo "$OUTPUT" | json | grep '^\["data","api_credentials","secret"\]' | cut -f2-)
+	KEY=$(echo "$OUTPUT" | json | grep '^\["data","api_credentials","key"\]' | cut -f2- | sed -e 's/^"//'  -e 's/"$//')
+	SECRET=$(echo "$OUTPUT" | json | grep '^\["data","api_credentials","secret"\]' | cut -f2- | sed -e 's/^"//'  -e 's/"$//')
 
 	echo "${ERROR:-false}"
 	echo "${USER:-false}"
@@ -54,15 +54,15 @@ function ApiUserLogin {
 		exit 77
 	fi
 
-	ERROR=$(echo "$OUTPUT" | json | grep '^\["errors","code"\]' | cut -f2-)
+	ERROR=$(echo "$OUTPUT" | json | grep '^\["error","code"\]' | cut -f2- | sed -e 's/^"//'  -e 's/"$//')
 	USER=$(echo "$OUTPUT" | json | grep '^\["user"\]' | cut -f2-)
-	KEY=$(echo "$OUTPUT" | json | grep '^\["data","api_credentials","key"\]' | cut -f2-)
-	SECRET=$(echo "$OUTPUT" | json | grep '^\["data","api_credentials","key"\]' | cut -f2-)
+	KEY=$(echo "$OUTPUT" | json | grep '^\["api_credentials","key"\]' | cut -f2- | sed -e 's/^"//'  -e 's/"$//')
+	SECRET=$(echo "$OUTPUT" | json | grep '^\["api_credentials","secret"\]' | cut -f2- | sed -e 's/^"//'  -e 's/"$//')
 
 	echo "${ERROR:-false}"
 	echo "${USER:-false}"
-	echo "${KEY}:-false}"
-	echo "${SECRET}:-false}"
+	echo "${KEY:-false}"
+	echo "${SECRET:-false}"
 }
 
 function ApiServerExists {
@@ -102,7 +102,7 @@ function ApiServerCreate {
 	KEY=$(Urlencode "$1")
 	SECRET=$(Urlencode "$2")
 	HOSTNAME=$(Urlencode "$3")
-	
+
 	OUTPUT=$(wget -t2 -T6 --header="X-PS-Bash: 1" -qO- "${MY_HOME}/extern/api/servers?key=$KEY&secret=$SECRET" --post-data "domain=$HOSTNAME")
 
 	if [ "$OUTPUT" == "" ]
@@ -116,16 +116,16 @@ function ApiServerCreate {
 
 	echo "${ERROR:-false}"
 	echo "${ID:-false}"
-}	
+}
 
 function ApiServerToken {
 	local HOSTNAME
 	local OUTPUT
 	local TOKEN
 	local ERROR
-	
+
 	HOSTNAME=$(Urlencode "$1")
-	
+
 	OUTPUT=$(wget -t2 -T6 --header="X-PS-Bash: 1" -qO- "${MY_HOME}/extern/api/request_verification_token?domain=$HOSTNAME")
 
 	if [ "$OUTPUT" == "" ]
@@ -139,7 +139,7 @@ function ApiServerToken {
 
 	echo "${ERROR:-false}"
 	echo "${TOKEN:-false}"
-}	
+}
 
 function ApiVerifyServer {
 	local KEY
@@ -153,7 +153,7 @@ function ApiVerifyServer {
 	SECRET=$(Urlencode "$2")
 	SERVER_ID=$(Urlencode "$3")
 	TOKEN=$(Urlencode "$4")
-	
+
 	OUTPUT=$(wget -t2 -T6 --header="X-PS-Bash: 1" -qO- "${MY_HOME}/extern/api/servers/${SERVER_ID}/verify?key=$KEY&secret=$SECRET" --post-data "token=$TOKEN")
 
 	if [ "$OUTPUT" == "" ]
@@ -165,8 +165,8 @@ function ApiVerifyServer {
 	ERROR=$(echo "$OUTPUT" | json | grep '^\["error"\]' | cut -f2-)
 
 	echo "${ERROR:-false}"
-}	
-	
+}
+
 function ApiServerPush {
 	local KEY
 	local SECRET
@@ -184,22 +184,21 @@ function ApiServerPush {
 
 	echo -n "expire=$EXPIRE&software=" > "$POSTFILE"
 
-	SOFTWARE=$(sort < "$SOFTWARE" | uniq | awk 'BEGIN { RS="\n"; FS="\t"; print "["; prevLocation="---"; prevName="---"; prevVersion="---"; prevParent="---";} 
-		{ 
-			if($1 == prevLocation){ $1=""; } else { prevLocation = $1; $1 = "\"l\":\""$1"\"," }; 
-			if($2 == prevParent){ $2=""; } else { prevParent = $2; $2 = "\"p\":\""$2"\"," }; 
-			if($3 == prevName){ $3=""; } else { prevName = $3; $3 = "\"n\":\""$3"\"," }; 
-			if($4 == prevVersion){ $4=""; } else { prevVersion = $4; $4 = "\"v\":\""$4"\"," }; 
-			line = $1$2$3$4; 
-			print "{"line"},"; 
-		} 
+	SOFTWARE=$(sort < "$SOFTWARE" | uniq | awk 'BEGIN { RS="\n"; FS="\t"; print "["; prevLocation="---"; prevName="---"; prevVersion="---"; prevParent="---";}
+		{
+			if($1 == prevLocation){ $1=""; } else { prevLocation = $1; $1 = "\"l\":\""$1"\"," };
+			if($2 == prevParent){ $2=""; } else { prevParent = $2; $2 = "\"p\":\""$2"\"," };
+			if($3 == prevName){ $3=""; } else { prevName = $3; $3 = "\"n\":\""$3"\"," };
+			if($4 == prevVersion){ $4=""; } else { prevVersion = $4; $4 = "\"v\":\""$4"\"," };
+			line = $1$2$3$4;
+			print "{"line"},";
+		}
 		END { print "{}]"; }' | sed 's/,},/},/' | tr -d '\n')
 	SOFTWARE=$(Urlencode "$SOFTWARE")
 
 	echo "$SOFTWARE" >> "$POSTFILE"
 
-
-	OUTPUT=$(wget -t2 -T6 --header="X-PS-Bash: 1" -qO- "${MY_HOME}/extern/api/servers/${SERVER_ID}/software_bucket/$BUCKET?key=$KEY&secret=$SECRET&scope=silent" --post-file $POSTFILE)
+	OUTPUT=$(wget -t2 -T6 --header="X-PS-Bash: 1" -qO- "${MY_HOME}/extern/api/servers/${SERVER_ID}/buckets/$BUCKET?key=$KEY&secret=$SECRET&scope=silent" --post-file $POSTFILE)
 
 	if [ "$OUTPUT" == "" ]
 	then
@@ -292,7 +291,7 @@ function ApiServerIsScanning {
 	local KEY
 	local SECRET
 	local SERVER_ID
-	local OUTPUT 
+	local OUTPUT
 	local ERROR
 	local SCANNING
 

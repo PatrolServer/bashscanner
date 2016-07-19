@@ -32,7 +32,7 @@ function Start {
 	EnvFile
 	Args "$@"
 
-	if [ "$CMD" == "false" ] 
+	if [ "$CMD" == "false" ]
 	then
 		echo "> Hi $USER,"
 		echo "> PatrolServer.com at your service. "
@@ -51,7 +51,7 @@ function Start {
 
 	if [ "$CMD" == "false" ]
 	then
-		if [[ "$CRON" == "ask" ]] 
+		if [[ "$CRON" == "ask" ]]
         	then
                 	Output
 		fi
@@ -84,11 +84,11 @@ function Login {
 			then
 				StoreKeySecret "$LOGIN_KEY" "$LOGIN_SECRET"
 				return
-			elif [ "$LOGIN_ERROR" == '"too_many_failed_attempts"' ]
+			elif [ "$LOGIN_ERROR" == "too_many_failed_attempts" ]
 			then
 				echo "> Your login was blocked for security issues, please try again in 10 min." >&2
 				exit 77
-			elif [ "$LOGIN_ERROR" == '"different_country"' ]
+			elif [ "$LOGIN_ERROR" == "different_country" ]
 			then
 				echo "> Your login is temporarily blocked for security measurements. Check your email for further instructions." >&2
 				exit 77
@@ -114,24 +114,24 @@ function Login {
 		LOGIN_RET=($(ApiUserLogin "$EMAIL" "$PASSWORD"))
 
 		local LOGIN_ERROR=${LOGIN_RET[0]}
-                local LOGIN_USER=${LOGIN_RET[1]}
-                local LOGIN_KEY=${LOGIN_RET[2]}
-                local LOGIN_SECRET=${LOGIN_RET[3]}
+        local LOGIN_USER=${LOGIN_RET[1]}
+        local LOGIN_KEY=${LOGIN_RET[2]}
+        local LOGIN_SECRET=${LOGIN_RET[3]}
 
 		if [ "$LOGIN_ERROR" == "false" ]
 		then
 			StoreKeySecret "$LOGIN_KEY" "$LOGIN_SECRET"
 			return
-		elif [ "$LOGIN_ERROR" == "8" ]
+		elif [ "$LOGIN_ERROR" == "too_many_failed_attempts" ]
 		then
-			echo "Your login was blocked for security issues (Unblock mail send)." >&2
+			echo "> Your login was blocked for security issues, please try again in 10 min." >&2
 			exit 77
-		elif [ "$LOGIN_ERROR" == "9" ]
+		elif [ "$LOGIN_ERROR" == "different_country" ]
 		then
-			echo "Your login was blocked for security issues (Unblock mail send)." >&2
+			echo "> Your login is temporarily blocked for security measurements. Check your email for further instructions." >&2
 			exit 77
 		else
-			echo "Login credentials incorrect." >&2
+			echo "> Invalid login credentials." >&2
 			exit 77
 		fi
 	fi
@@ -164,14 +164,14 @@ function Register {
 	local REGISTER_KEY=${REGISTER_RET[2]}
 	local REGISTER_SECRET=${REGISTER_RET[3]}
 
-	StoreKeySecret "$REGISTER_KEY" "$REGISTER_SECRET"
-
 	if [ "$REGISTER_ERROR" == "false" ]
 	then
 		echo "success"
+		echo "${REGISTER_KEY:-false}"
+		echo "${REGISTER_SECRET:-false}"
 		return
 	else
-		if [[ "$REGISTER_ERROR" == "82" ]]
+		if [[ "$REGISTER_ERROR" =~ "The email has already been taken" ]]
 		then
 			echo "email"
 			return
@@ -212,8 +212,8 @@ function Hostname {
 	then
 		TestHostname
 	fi
-	
-	if [[ "$CMD" != "false" ]] 
+
+	if [[ "$CMD" != "false" ]]
 	then
 		if [ "$IP" == "" ]
 		then
@@ -228,7 +228,7 @@ function Hostname {
 
 	for I in 1 2 3
 	do
-		
+
 		if [ "$IP" == "" ]
 		then
 			echo "> Could not determine your hostname."
@@ -244,9 +244,9 @@ function Hostname {
 		fi
 
 		TestHostname
-		
+
 		if [[ "$IP" != "" ]] && [ "$IP" == "$EXTERNAL_IP" ]
-		then 
+		then
 			return;
 		fi
 	done
@@ -291,7 +291,7 @@ function DetermineHostname {
 	  		echo "> Unexpected error occured." >&2
 	  		exit 77;
 		fi
-	fi	
+	fi
 }
 
 function Account {
@@ -306,7 +306,7 @@ function Account {
 	then
 		YN="n"
 	else
-		echo "> You can use this tool 5 times without account." 
+		echo "> You can use this tool 5 times without account."
 
 		YN="..."
 		while [[ "$YN" != "n" ]] && [[ $YN != "y" ]]; do
@@ -320,11 +320,18 @@ function Account {
 		EMAIL="tmp-$(Random)@$HOSTNAME"
 		PASSWORD=$(Random)
 
-		REGISTER_RET=$(Register "$EMAIL" "$PASSWORD")
-		if [ "$REGISTER_RET" != "success" ]
+		REGISTER_RET=($(Register "$EMAIL" "$PASSWORD"))
+
+		REGISTER_RET_STATUS=${REGISTER_RET[0]}
+
+		if [ "$REGISTER_RET_STATUS" != "success" ]
 		then
 			echo "> Internal error, could not create temporary account"
 			exit 77
+		else
+			REGISTER_RET_KEY=${REGISTER_RET[1]}
+			REGISTER_RET_SECRET=${REGISTER_RET[2]}
+			StoreKeySecret "$REGISTER_RET_KEY" "$REGISTER_RET_SECRET"
 		fi
 
 	else
@@ -351,7 +358,7 @@ function Account {
 			fi
 
 			if [ ${#PASSWORD} -le 6 ]
-			then 
+			then
 				echo "> Password should minimal contain 6 characters" >&2
 			fi
 
@@ -400,7 +407,7 @@ function DetermineServer {
 
 		HAS_SERVER=$(echo "$SERVERS" | json | grep -P '^\[[0-9]*,"name"\]\t"'"$HOSTNAME"'"' -o)
 	fi
-	
+
 	if [ "$HAS_SERVER" == "" ]
 	then
 		echo "> Internal error, could not create the server online" >&2
@@ -420,17 +427,17 @@ function DetermineServer {
 
 		SERVER_VERIFY_RET=($(ApiVerifyServer "$KEY" "$SECRET" "$SERVER_ID" "$SERVER_TOKEN"))
 		SERVER_TOKEN_ERRORS=${SERVER_VERIFY_RET[0]}
-	fi	
+	fi
 }
 
 function Scan {
-	if [[ "$CMD" == "false" ]] 
+	if [[ "$CMD" == "false" ]]
 	then
 		echo "> Searching for packages, can take some time..."
 	fi
 
 	SOFTWARE=$(mktemp)
-	
+
 	# Update db
 	if ! command -v updatedb >/dev/null 2>&1 && command -v yum >/dev/null 2>&1
 	then
@@ -448,8 +455,8 @@ function Scan {
 	PhpmyadminSoftware
 	JoomlaSoftware
 	MagentoSoftware
-	
-	if [[ "$CMD" == "false" ]] 
+
+	if [[ "$CMD" == "false" ]]
 	then
 	 	echo "> Scanning for newest releases and exploits, can take serveral minutes..."
 	 	echo "> Take a coffee break ;) "
@@ -481,7 +488,7 @@ function Scan {
 	 	SERVER_SCANNING_ERRORS=${SERVER_SCANNING_RET[0]}
 		SERVER_SCANNING=${SERVER_SCANNING_RET[1]}
 
-		if [[ "$CMD" == "false" ]] 
+		if [[ "$CMD" == "false" ]]
 		then
 			echo -n "."
 		fi
@@ -489,14 +496,14 @@ function Scan {
 		sleep 5
 	done
 
-	if [[ "$CMD" == "false" ]] 
+	if [[ "$CMD" == "false" ]]
 	then
 		echo "";
 	fi
 }
 
 function Output {
-	if [[ "$CMD" == "false" ]] 
+	if [[ "$CMD" == "false" ]]
 	then
 		echo "> Software versions has been retrieved (Solutions for the exploits can be seen on our web interface):"
 	fi
@@ -509,7 +516,7 @@ function Output {
 	if [ "$SOFTWARE" == "" ]
 	then
 		echo -e "\tStrangely, No packages were found..."
-	fi 
+	fi
 
 	CORE_SOFTWARE=$(echo "$SOFTWARE" | grep '"parent":null' | grep '"location":"\\\/"')
 	OutputBlock "$SOFTWARE" "$CORE_SOFTWARE"
@@ -548,7 +555,7 @@ function OutputBlock {
 		# Print submodules
 		for LINE in $(echo "$SOFTWARE" | grep '"parent":"'"$CANONICAL_NAME_GREP"'"' | grep "location\":\"$LOCATION_GREP"); do
 			LINE=$(echo "$LINE" | json)
-			
+
 			echo -en "\t"
 			OutputLine "$LINE"
 		done
@@ -605,7 +612,7 @@ function OutputLine {
 		IS_BIGGER=$(echo "$EXPLOIT" | grep "^[5-9]")
 		if [ "$IS_BIGGER" == "1" ]
 		then
-			COUNT_EXPLOITS=$((COUNT_EXPLOITS+1)) 
+			COUNT_EXPLOITS=$((COUNT_EXPLOITS+1))
 		fi
 	done
 
@@ -628,19 +635,19 @@ function Cronjob {
 		return
 	fi
 
-	if [[ "$CMD" != "false" ]] 
+	if [[ "$CMD" != "false" ]]
 	then
 		return
 	fi
 
-	if [[ "$CRON" != "ask" ]] && [[ "$CRON" != "true" ]] 
+	if [[ "$CRON" != "ask" ]] && [[ "$CRON" != "true" ]]
 	then
 		return
 	fi
 
 	# Check if user want a cronjob
 	YN="..."
-	if [[ "$CRON" == "true" ]] 
+	if [[ "$CRON" == "true" ]]
 	then
 	 	YN="y"
 	fi
@@ -669,12 +676,12 @@ function Cronjob {
 
 			if [ "$CHANGE_EMAIL_SUCCESS" == "false" ]
 			then
-			    if [[ $CHANGE_EMAIL_ERRORS =~ "The email has already been taken." ]] 
+			    if [[ $CHANGE_EMAIL_ERRORS =~ "The email has already been taken." ]]
 			    then
 			        echo "> There is already an account with this emailadress, use this tool with email and password parameters." >&2
 				    exit 77
 			    fi
-			    
+
 				echo "> Internal error when changing username" >&2
 				exit 77
 			fi
