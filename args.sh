@@ -72,7 +72,13 @@ function Args {
                         ;;
                     cron=*)
                         CRON=${OPTARG#*=}
-                        ;;  
+                        ;;
+                    endpoint)
+                        MY_HOME="https://app.patrolserver.com"
+                        ;;
+                    endpoint=*)
+                        MY_HOME=${OPTARG#*=}
+                        ;;
                     *)
                         if [ "$OPTERR" = 1 ] && [ "${optspec:0:1}" != ":" ]; then
                             echo "Unknown option --${OPTARG}" >&2
@@ -110,6 +116,9 @@ function Args {
                 ;;
             b)
                 BUCKET=${OPTARG}
+                ;;
+            ep)
+                MY_HOME=${OPTARG}
                 ;;
             *)
                 if [ "$OPTERR" != 1 ] || [ "${optspec:0:1}" = ":" ]; then
