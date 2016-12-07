@@ -68,7 +68,6 @@ function ApiUserLogin {
 function ApiServerExists {
 	local HOST
 	local OUTPUT
-	local ERRORS
 	local ERROR
 	local EXISTS
 
@@ -317,14 +316,14 @@ function ApiUserChange {
 	local SECRET
 	local EMAIL
 	local OUTPUT
-	local ERRORS
-	local SUCCESS
+	local ERROR
+	local USER
 
 	KEY=$(Urlencode "$1")
 	SECRET=$(Urlencode "$2")
 	EMAIL=$(Urlencode "$3")
 
-	OUTPUT=$(wget -t2 -T6 --header="X-PS-Bash: 1" -qO- "${MY_HOME}/extern/api/user/update?key=$KEY&secret=$SECRET" --post-data "email=$EMAIL")
+	OUTPUT=$(wget -t2 -T6 --header="X-PS-Bash: 1" -qO- "${MY_HOME}/extern/api/user?key=$KEY&secret=$SECRET" --post-data "email=$EMAIL")
 
 	if [ "$OUTPUT" == "" ]
 	then
@@ -332,11 +331,11 @@ function ApiUserChange {
 		exit 77
 	fi
 
-	ERRORS=$(echo "$OUTPUT" | json | grep '^\["errors"\]' | cut -f2-)
-	SUCCESS=$(echo "$OUTPUT" | json | grep '^\["success"\]' | cut -f2-)
+	ERROR=$(echo "$OUTPUT" | json | grep '^\["error","code"\]' | cut -f2- | sed -e 's/^"//'  -e 's/"$//')
+	USER=$(echo "$OUTPUT" | json | grep '^\["data"\]' | cut -f2-)
 
-	echo "${ERRORS:-false}"
-	echo "${SUCCESS:-false}"
+	echo "${ERROR:-false}"
+	echo "${USER:-false}"
 }
 
 function ApiUserRemove {
