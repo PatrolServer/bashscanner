@@ -52,8 +52,8 @@ function Start {
 	if [ "$CMD" == "false" ]
 	then
 		if [[ "$CRON" == "ask" ]]
-        	then
-                	Output
+		then
+			Output
 		fi
 
 		Cronjob
@@ -114,9 +114,9 @@ function Login {
 		LOGIN_RET=($(ApiUserLogin "$EMAIL" "$PASSWORD"))
 
 		local LOGIN_ERROR=${LOGIN_RET[0]}
-        local LOGIN_USER=${LOGIN_RET[1]}
-        local LOGIN_KEY=${LOGIN_RET[2]}
-        local LOGIN_SECRET=${LOGIN_RET[3]}
+		local LOGIN_USER=${LOGIN_RET[1]}
+		local LOGIN_KEY=${LOGIN_RET[2]}
+		local LOGIN_SECRET=${LOGIN_RET[3]}
 
 		if [ "$LOGIN_ERROR" == "false" ]
 		then
@@ -136,7 +136,7 @@ function Login {
 		fi
 	fi
 
-  	exit 77;
+	exit 77;
 }
 
 function StoreKeySecret {
@@ -177,8 +177,8 @@ function Register {
 			return
 		fi
 
-  		echo "> Unexpected error occured." >&2
-  		exit 77;
+		echo "> Unexpected error occured." >&2
+		exit 77;
 	fi
 }
 
@@ -252,7 +252,7 @@ function Hostname {
 	done
 
 	echo "> Could not determine hostname."  >&2
-  	exit 77;
+	exit 77;
 }
 
 function DetermineHostname {
@@ -267,29 +267,28 @@ function DetermineHostname {
 		# We actively check for these criteria
 		SERVER_EXISTS_RET=($(ApiServerExists "$HOSTNAME"))
 
-		SERVER_EXISTS=${SERVER_EXISTS_RET[0]}
-		SERVER_EXISTS_ERROR_TYPE=${SERVER_EXISTS_RET[1]}
-		SERVER_EXISTS_ERRORS=${SERVER_EXISTS_RET[2]}
+		SERVER_EXISTS_ERROR=${SERVER_EXISTS_RET[0]}
+		SERVER_EXISTS=${SERVER_EXISTS_RET[1]}
 
-		if [ "$SERVER_EXISTS_ERROR_TYPE" == "false" ]
+		if [ "$SERVER_EXISTS_ERROR" == "false" ]
 		then
 			return
 
 		# There is already an host from this user.
-		elif [ "$SERVER_EXISTS_ERROR_TYPE" == "1" ]
+		elif [ "$SERVER_EXISTS_ERROR" == "15" ]
 		then
 			echo "> An account was already created for this host or a subdomain of this host. Please login into your patrolserver.com account or add the key/secret when calling this command." >&2
 			Login
 
 		# Hostname could not be found.
-		elif [ "$SERVER_EXISTS_ERROR_TYPE" == "2" ]
+		elif [ "$SERVER_EXISTS_ERROR" == "83" ]
 		then
 			echo "> Your hostname ($HOSTNAME) doesn't resolve to this IP ($IP)." >&2
-	  		exit 77;
-	  	# Undefined error occured.
+			exit 77;
+		# Undefined error occured.
 		else
-	  		echo "> Unexpected error occured." >&2
-	  		exit 77;
+			echo "> Unexpected error occured." >&2
+			exit 77;
 		fi
 	fi
 }
@@ -311,11 +310,11 @@ function Account {
 		YN="..."
 		while [[ "$YN" != "n" ]] && [[ $YN != "y" ]]; do
 			read -rp "> Do you want to create an account (y/n)? " YN
-	 	done
+		done
 	 fi
 
- 	if [ "$YN" == "n" ]
- 	then
+	if [ "$YN" == "n" ]
+	then
 		# Create account when no account exists.
 		EMAIL="tmp-$(Random)@$HOSTNAME"
 		PASSWORD=$(Random)
@@ -347,12 +346,18 @@ function Account {
 			read -rs PASSWORD2
 			echo "";
 
-			REGISTER_RET=""
+			REGISTER_RET_STATUS=""
 			if [ "$PASSWORD" == "$PASSWORD2" ] && [ ${#PASSWORD} -ge 7 ]
 			then
-				REGISTER_RET=$(Register "$EMAIL" "$PASSWORD")
-				if [ "$REGISTER_RET" == "success" ]
+				REGISTER_RET=($(Register "$EMAIL" "$PASSWORD"))
+
+				REGISTER_RET_STATUS=${REGISTER_RET[0]}
+
+				if [ "$REGISTER_RET_STATUS" == "success" ]
 				then
+					REGISTER_RET_KEY=${REGISTER_RET[1]}
+					REGISTER_RET_SECRET=${REGISTER_RET[2]}
+					StoreKeySecret "$REGISTER_RET_KEY" "$REGISTER_RET_SECRET"
 					return
 				fi
 			fi
@@ -372,8 +377,6 @@ function Account {
 				echo "> Account already exists with this account. Use command with email and password parameters." >&2
 				exit 77
 			fi
-
-
 		done
 
 		echo "> Account could not be created." >&2
@@ -458,34 +461,34 @@ function Scan {
 
 	if [[ "$CMD" == "false" ]]
 	then
-	 	echo "> Scanning for newest releases and exploits, can take serveral minutes..."
-	 	echo "> Take a coffee break ;) "
+		echo "> Scanning for newest releases and exploits, can take serveral minutes..."
+		echo "> Take a coffee break ;) "
 	fi
 
- 	SOFTWARE_PUST_RET=($(ApiServerPush "$KEY" "$SECRET" "$SERVER_ID" "$BUCKET" "$SOFTWARE"))
- 	SOFTWARE_PUST_ERRORS=${SOFTWARE_PUST_RET[0]}
+	SOFTWARE_PUST_RET=($(ApiServerPush "$KEY" "$SECRET" "$SERVER_ID" "$BUCKET" "$SOFTWARE"))
+	SOFTWARE_PUST_ERRORS=${SOFTWARE_PUST_RET[0]}
 
- 	if [ "$SOFTWARE_PUST_ERRORS" != "false" ]
- 	then
- 		echo "> Could not upload software data, please give our support team a call with the following details" >&2
- 		echo "$SOFTWARE_PUST_ERRORS" >&2
- 		exit 77
- 	fi
+	if [ "$SOFTWARE_PUST_ERRORS" != "false" ]
+	then
+		echo "> Could not upload software data, please give our support team a call with the following details" >&2
+		echo "$SOFTWARE_PUST_ERRORS" >&2
+		exit 77
+	fi
 
- 	SERVER_SCAN_RET=($(ApiServerScan "$KEY" "$SECRET" "$SERVER_ID"))
- 	SERVER_SCAN_ERRORS=${SERVER_SCAN_RET[0]}
+	SERVER_SCAN_RET=($(ApiServerScan "$KEY" "$SECRET" "$SERVER_ID"))
+	SERVER_SCAN_ERRORS=${SERVER_SCAN_RET[0]}
 
- 	if [ "$SERVER_SCAN_ERRORS" != "false" ]
- 	then
- 		echo "> Could not send scan command, please give our support team a call with the following details" >&2
- 		echo "$SERVER_SCAN_ERRORS" >&2
- 		exit 77
- 	fi
+	if [ "$SERVER_SCAN_ERRORS" != "false" ]
+	then
+		echo "> Could not send scan command, please give our support team a call with the following details" >&2
+		echo "$SERVER_SCAN_ERRORS" >&2
+		exit 77
+	fi
 
- 	SERVER_SCANNING="true"
- 	while [ "$SERVER_SCANNING" == "true" ] ; do
-	 	SERVER_SCANNING_RET=($(ApiServerIsScanning "$KEY" "$SECRET" "$SERVER_ID"))
-	 	SERVER_SCANNING_ERRORS=${SERVER_SCANNING_RET[0]}
+	SERVER_SCANNING="true"
+	while [ "$SERVER_SCANNING" == "true" ] ; do
+		SERVER_SCANNING_RET=($(ApiServerIsScanning "$KEY" "$SECRET" "$SERVER_ID"))
+		SERVER_SCANNING_ERRORS=${SERVER_SCANNING_RET[0]}
 		SERVER_SCANNING=${SERVER_SCANNING_RET[1]}
 
 		if [[ "$CMD" == "false" ]]
@@ -591,7 +594,7 @@ function OutputLine {
 		echo -n "$VERSION"
 		echo -ne "\e[0m"
 	elif [[ "$NEW_VERSION" != "" ]]
-    then
+	then
 		echo -ne "\e[0;33m"
 		echo -n "$VERSION"
 		echo -ne "\e[0m"
@@ -649,11 +652,11 @@ function Cronjob {
 	YN="..."
 	if [[ "$CRON" == "true" ]]
 	then
-	 	YN="y"
+		YN="y"
 	fi
 	while [[ "$YN" != "n" ]] && [[ $YN != "y" ]]; do
 		read -rp "> It is advisable to check your server daily, should we set a cronjob (y/n)? " YN
- 	done
+	done
 
 	if [ "$YN" == "n" ]
 	then
@@ -676,11 +679,11 @@ function Cronjob {
 
 			if [ "$CHANGE_EMAIL_SUCCESS" == "false" ]
 			then
-			    if [[ $CHANGE_EMAIL_ERRORS =~ "The email has already been taken." ]]
-			    then
-			        echo "> There is already an account with this emailadress, use this tool with email and password parameters." >&2
-				    exit 77
-			    fi
+				if [[ $CHANGE_EMAIL_ERRORS =~ "The email has already been taken." ]]
+				then
+					echo "> There is already an account with this emailadress, use this tool with email and password parameters." >&2
+					exit 77
+				fi
 
 				echo "> Internal error when changing username" >&2
 				exit 77
@@ -688,22 +691,22 @@ function Cronjob {
 		fi
 
 		mkdir ~/.patrolserver 2> /dev/null
-	    echo -e "HOSTNAME=$HOSTNAME\nKEY=$KEY\nSECRET=$SECRET" > ~/.patrolserver/env
-	    cat "$LOCATE" > ~/.patrolserver/locate.db
-	    wget -O ~/.patrolserver/patrolserver "https://raw.githubusercontent.com/PatrolServer/bashScanner/master/patrolserver" 2&>1 /dev/null
-	    chmod +x ~/.patrolserver/patrolserver
+		echo -e "HOSTNAME=$HOSTNAME\nKEY=$KEY\nSECRET=$SECRET" > ~/.patrolserver/env
+		cat "$LOCATE" > ~/.patrolserver/locate.db
+		wget -O ~/.patrolserver/patrolserver "https://raw.githubusercontent.com/PatrolServer/bashScanner/master/patrolserver" 2&>1 /dev/null
+		chmod +x ~/.patrolserver/patrolserver
 
-	    # Set cronjob
-	    CRON_TMP=$(mktemp)
+		# Set cronjob
+		CRON_TMP=$(mktemp)
 		crontab -l 2> /dev/null > "$CRON_TMP"
 		CRON_HOUR=$((RANDOM % 24))
 		CRON_MINUTE=$((RANDOM % 60))
 		echo "$CRON_MINUTE $CRON_HOUR * * * /bin/bash $HOME/.patrolserver/patrolserver --cmd --key=\"$KEY\" --secret=\"$SECRET\" --hostname=\"$HOSTNAME\" > /dev/null" >> $CRON_TMP
 		crontab "$CRON_TMP"
 
-	    echo "> cronjob was set."
+		echo "> cronjob was set."
 
-	    if [[ "$EMAIL" == tmp\-* ]]
+		if [[ "$EMAIL" == tmp\-* ]]
 		then
 			echo "> Your login on patrolserver.com:"
 			echo -e "\tlogin: $REAL_EMAIL"

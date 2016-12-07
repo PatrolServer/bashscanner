@@ -74,7 +74,7 @@ function ApiServerExists {
 
 	HOST=$(Urlencode "$1")
 
-	OUTPUT=$(wget -t2 -T6 --header="X-PS-Bash: 1" -qO- "${MY_HOME}/api/server/exists?host=$HOST")
+	OUTPUT=$(wget -t2 -T6 --header="X-PS-Bash: 1" -qO- "${MY_HOME}/extern/api/serverExists?host=$HOST")
 
 	if [ "$OUTPUT" == "" ]
 	then
@@ -82,13 +82,11 @@ function ApiServerExists {
 		exit 77
 	fi
 
-	ERRORS=$(echo "$OUTPUT" | json | grep '^\["errors"\]' | cut -f2-)
-	ERROR=$(echo "$OUTPUT" | json | grep '^\["error"\]' | cut -f2-  | sed -e 's/^"//'  -e 's/"$//')
+	ERROR=$(echo "$OUTPUT" | json | grep '^\["error","code"\]' | cut -f2- | sed -e 's/^"//'  -e 's/"$//')
 	EXISTS=$(echo "$OUTPUT" | json | grep '^\["exists"\]' | cut -f2-)
 
-	echo "${EXISTS:-false}"
 	echo "${ERROR:-false}"
-	echo "${ERRORS:-false}"
+	echo "${EXISTS:-false}"
 }
 
 function ApiServerCreate {
