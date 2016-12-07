@@ -53,5 +53,5 @@ then
 fi
 
 # Run the runner
-$RUNNER "$@"
+bash $RUNNER "$@"
 
