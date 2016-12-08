@@ -250,10 +250,10 @@ function ApiUserRegister {
 		exit 77
 	fi
 
-	ERROR=$(echo "$OUTPUT" | json | grep '^\["error","code"\]' | cut -f2-)
+	ERROR=$(echo "$OUTPUT" | json | grep '^\["error"\]' | cut -f2-)
 	USER=$(echo "$OUTPUT" | json | grep '^\["data","user"\]' | cut -f2-)
-	KEY=$(echo "$OUTPUT" | json | grep '^\["data","api_credentials","key"\]' | cut -f2-)
-	SECRET=$(echo "$OUTPUT" | json | grep '^\["data","api_credentials","secret"\]' | cut -f2-)
+	KEY=$(echo "$OUTPUT" | json | grep '^\["data","api_credentials","key"\]' | cut -f2- | sed -e 's/^"//'  -e 's/"$//')
+	SECRET=$(echo "$OUTPUT" | json | grep '^\["data","api_credentials","secret"\]' | cut -f2- | sed -e 's/^"//'  -e 's/"$//')
 
 	echo "${ERROR:-false}"
 	echo "${USER:-false}"
@@ -281,27 +281,26 @@ function ApiUserLogin {
 		exit 77
 	fi
 
-	ERROR=$(echo "$OUTPUT" | json | grep '^\["errors","code"\]' | cut -f2-)
+	ERROR=$(echo "$OUTPUT" | json | grep '^\["error","code"\]' | cut -f2- | sed -e 's/^"//'  -e 's/"$//')
 	USER=$(echo "$OUTPUT" | json | grep '^\["user"\]' | cut -f2-)
-	KEY=$(echo "$OUTPUT" | json | grep '^\["data","api_credentials","key"\]' | cut -f2-)
-	SECRET=$(echo "$OUTPUT" | json | grep '^\["data","api_credentials","key"\]' | cut -f2-)
+	KEY=$(echo "$OUTPUT" | json | grep '^\["api_credentials","key"\]' | cut -f2- | sed -e 's/^"//'  -e 's/"$//')
+	SECRET=$(echo "$OUTPUT" | json | grep '^\["api_credentials","secret"\]' | cut -f2- | sed -e 's/^"//'  -e 's/"$//')
 
 	echo "${ERROR:-false}"
 	echo "${USER:-false}"
-	echo "${KEY}:-false}"
-	echo "${SECRET}:-false}"
+	echo "${KEY:-false}"
+	echo "${SECRET:-false}"
 }
 
 function ApiServerExists {
 	local HOST
 	local OUTPUT
-	local ERRORS
 	local ERROR
 	local EXISTS
 
 	HOST=$(Urlencode "$1")
 
-	OUTPUT=$(wget -t2 -T6 --header="X-PS-Bash: 1" -qO- "${MY_HOME}/api/server/exists?host=$HOST")
+	OUTPUT=$(wget -t2 -T6 --header="X-PS-Bash: 1" -qO- "${MY_HOME}/extern/api/serverExists?host=$HOST")
 
 	if [ "$OUTPUT" == "" ]
 	then
@@ -309,13 +308,11 @@ function ApiServerExists {
 		exit 77
 	fi
 
-	ERRORS=$(echo "$OUTPUT" | json | grep '^\["errors"\]' | cut -f2-)
-	ERROR=$(echo "$OUTPUT" | json | grep '^\["error"\]' | cut -f2-  | sed -e 's/^"//'  -e 's/"$//')
+	ERROR=$(echo "$OUTPUT" | json | grep '^\["error","code"\]' | cut -f2- | sed -e 's/^"//'  -e 's/"$//')
 	EXISTS=$(echo "$OUTPUT" | json | grep '^\["exists"\]' | cut -f2-)
 
-	echo "${EXISTS:-false}"
 	echo "${ERROR:-false}"
-	echo "${ERRORS:-false}"
+	echo "${EXISTS:-false}"
 }
 
 function ApiServerCreate {
@@ -329,7 +326,7 @@ function ApiServerCreate {
 	KEY=$(Urlencode "$1")
 	SECRET=$(Urlencode "$2")
 	HOSTNAME=$(Urlencode "$3")
-	
+
 	OUTPUT=$(wget -t2 -T6 --header="X-PS-Bash: 1" -qO- "${MY_HOME}/extern/api/servers?key=$KEY&secret=$SECRET" --post-data "domain=$HOSTNAME")
 
 	if [ "$OUTPUT" == "" ]
@@ -343,16 +340,16 @@ function ApiServerCreate {
 
 	echo "${ERROR:-false}"
 	echo "${ID:-false}"
-}	
+}
 
 function ApiServerToken {
 	local HOSTNAME
 	local OUTPUT
 	local TOKEN
 	local ERROR
-	
+
 	HOSTNAME=$(Urlencode "$1")
-	
+
 	OUTPUT=$(wget -t2 -T6 --header="X-PS-Bash: 1" -qO- "${MY_HOME}/extern/api/request_verification_token?domain=$HOSTNAME")
 
 	if [ "$OUTPUT" == "" ]
@@ -366,7 +363,7 @@ function ApiServerToken {
 
 	echo "${ERROR:-false}"
 	echo "${TOKEN:-false}"
-}	
+}
 
 function ApiVerifyServer {
 	local KEY
@@ -380,7 +377,7 @@ function ApiVerifyServer {
 	SECRET=$(Urlencode "$2")
 	SERVER_ID=$(Urlencode "$3")
 	TOKEN=$(Urlencode "$4")
-	
+
 	OUTPUT=$(wget -t2 -T6 --header="X-PS-Bash: 1" -qO- "${MY_HOME}/extern/api/servers/${SERVER_ID}/verify?key=$KEY&secret=$SECRET" --post-data "token=$TOKEN")
 
 	if [ "$OUTPUT" == "" ]
@@ -392,8 +389,8 @@ function ApiVerifyServer {
 	ERROR=$(echo "$OUTPUT" | json | grep '^\["error"\]' | cut -f2-)
 
 	echo "${ERROR:-false}"
-}	
-	
+}
+
 function ApiServerPush {
 	local KEY
 	local SECRET
@@ -411,22 +408,21 @@ function ApiServerPush {
 
 	echo -n "expire=$EXPIRE&software=" > "$POSTFILE"
 
-	SOFTWARE=$(sort < "$SOFTWARE" | uniq | awk 'BEGIN { RS="\n"; FS="\t"; print "["; prevLocation="---"; prevName="---"; prevVersion="---"; prevParent="---";} 
-		{ 
-			if($1 == prevLocation){ $1=""; } else { prevLocation = $1; $1 = "\"l\":\""$1"\"," }; 
-			if($2 == prevParent){ $2=""; } else { prevParent = $2; $2 = "\"p\":\""$2"\"," }; 
-			if($3 == prevName){ $3=""; } else { prevName = $3; $3 = "\"n\":\""$3"\"," }; 
-			if($4 == prevVersion){ $4=""; } else { prevVersion = $4; $4 = "\"v\":\""$4"\"," }; 
-			line = $1$2$3$4; 
-			print "{"line"},"; 
-		} 
+	SOFTWARE=$(sort < "$SOFTWARE" | uniq | awk 'BEGIN { RS="\n"; FS="\t"; print "["; prevLocation="---"; prevName="---"; prevVersion="---"; prevParent="---";}
+		{
+			if($1 == prevLocation){ $1=""; } else { prevLocation = $1; $1 = "\"l\":\""$1"\"," };
+			if($2 == prevParent){ $2=""; } else { prevParent = $2; $2 = "\"p\":\""$2"\"," };
+			if($3 == prevName){ $3=""; } else { prevName = $3; $3 = "\"n\":\""$3"\"," };
+			if($4 == prevVersion){ $4=""; } else { prevVersion = $4; $4 = "\"v\":\""$4"\"," };
+			line = $1$2$3$4;
+			print "{"line"},";
+		}
 		END { print "{}]"; }' | sed 's/,},/},/' | tr -d '\n')
 	SOFTWARE=$(Urlencode "$SOFTWARE")
 
 	echo "$SOFTWARE" >> "$POSTFILE"
 
-
-	OUTPUT=$(wget -t2 -T6 --header="X-PS-Bash: 1" -qO- "${MY_HOME}/extern/api/servers/${SERVER_ID}/software_bucket/$BUCKET?key=$KEY&secret=$SECRET&scope=silent" --post-file $POSTFILE)
+	OUTPUT=$(wget -t2 -T6 --header="X-PS-Bash: 1" -qO- "${MY_HOME}/extern/api/servers/${SERVER_ID}/buckets/$BUCKET?key=$KEY&secret=$SECRET&scope=silent" --post-file $POSTFILE)
 
 	if [ "$OUTPUT" == "" ]
 	then
@@ -519,7 +515,7 @@ function ApiServerIsScanning {
 	local KEY
 	local SECRET
 	local SERVER_ID
-	local OUTPUT 
+	local OUTPUT
 	local ERROR
 	local SCANNING
 
@@ -547,14 +543,14 @@ function ApiUserChange {
 	local SECRET
 	local EMAIL
 	local OUTPUT
-	local ERRORS
-	local SUCCESS
+	local ERROR
+	local USER
 
 	KEY=$(Urlencode "$1")
 	SECRET=$(Urlencode "$2")
 	EMAIL=$(Urlencode "$3")
 
-	OUTPUT=$(wget -t2 -T6 --header="X-PS-Bash: 1" -qO- "${MY_HOME}/extern/api/user/update?key=$KEY&secret=$SECRET" --post-data "email=$EMAIL")
+	OUTPUT=$(wget -t2 -T6 --header="X-PS-Bash: 1" -qO- "${MY_HOME}/extern/api/user?key=$KEY&secret=$SECRET" --post-data "email=$EMAIL")
 
 	if [ "$OUTPUT" == "" ]
 	then
@@ -562,11 +558,11 @@ function ApiUserChange {
 		exit 77
 	fi
 
-	ERRORS=$(echo "$OUTPUT" | json | grep '^\["errors"\]' | cut -f2-)
-	SUCCESS=$(echo "$OUTPUT" | json | grep '^\["success"\]' | cut -f2-)
+	ERROR=$(echo "$OUTPUT" | json | grep '^\["error","code"\]' | cut -f2- | sed -e 's/^"//'  -e 's/"$//')
+	USER=$(echo "$OUTPUT" | json | grep '^\["data"\]' | cut -f2-)
 
-	echo "${ERRORS:-false}"
-	echo "${SUCCESS:-false}"
+	echo "${ERROR:-false}"
+	echo "${USER:-false}"
 }
 
 function ApiUserRemove {
@@ -1020,7 +1016,7 @@ function Start {
 	EnvFile
 	Args "$@"
 
-	if [ "$CMD" == "false" ] 
+	if [ "$CMD" == "false" ]
 	then
 		echo "> Hi $USER,"
 		echo "> PatrolServer.com at your service. "
@@ -1039,9 +1035,9 @@ function Start {
 
 	if [ "$CMD" == "false" ]
 	then
-		if [[ "$CRON" == "ask" ]] 
-        	then
-                	Output
+		if [[ "$CRON" == "ask" ]]
+		then
+			Output
 		fi
 
 		Cronjob
@@ -1072,11 +1068,11 @@ function Login {
 			then
 				StoreKeySecret "$LOGIN_KEY" "$LOGIN_SECRET"
 				return
-			elif [ "$LOGIN_ERROR" == '"too_many_failed_attempts"' ]
+			elif [ "$LOGIN_ERROR" == "too_many_failed_attempts" ]
 			then
 				echo "> Your login was blocked for security issues, please try again in 10 min." >&2
 				exit 77
-			elif [ "$LOGIN_ERROR" == '"different_country"' ]
+			elif [ "$LOGIN_ERROR" == "different_country" ]
 			then
 				echo "> Your login is temporarily blocked for security measurements. Check your email for further instructions." >&2
 				exit 77
@@ -1102,29 +1098,29 @@ function Login {
 		LOGIN_RET=($(ApiUserLogin "$EMAIL" "$PASSWORD"))
 
 		local LOGIN_ERROR=${LOGIN_RET[0]}
-                local LOGIN_USER=${LOGIN_RET[1]}
-                local LOGIN_KEY=${LOGIN_RET[2]}
-                local LOGIN_SECRET=${LOGIN_RET[3]}
+		local LOGIN_USER=${LOGIN_RET[1]}
+		local LOGIN_KEY=${LOGIN_RET[2]}
+		local LOGIN_SECRET=${LOGIN_RET[3]}
 
 		if [ "$LOGIN_ERROR" == "false" ]
 		then
 			StoreKeySecret "$LOGIN_KEY" "$LOGIN_SECRET"
 			return
-		elif [ "$LOGIN_ERROR" == "8" ]
+		elif [ "$LOGIN_ERROR" == "too_many_failed_attempts" ]
 		then
-			echo "Your login was blocked for security issues (Unblock mail send)." >&2
+			echo "> Your login was blocked for security issues, please try again in 10 min." >&2
 			exit 77
-		elif [ "$LOGIN_ERROR" == "9" ]
+		elif [ "$LOGIN_ERROR" == "different_country" ]
 		then
-			echo "Your login was blocked for security issues (Unblock mail send)." >&2
+			echo "> Your login is temporarily blocked for security measurements. Check your email for further instructions." >&2
 			exit 77
 		else
-			echo "Login credentials incorrect." >&2
+			echo "> Invalid login credentials." >&2
 			exit 77
 		fi
 	fi
 
-  	exit 77;
+	exit 77;
 }
 
 function StoreKeySecret {
@@ -1152,21 +1148,21 @@ function Register {
 	local REGISTER_KEY=${REGISTER_RET[2]}
 	local REGISTER_SECRET=${REGISTER_RET[3]}
 
-	StoreKeySecret "$REGISTER_KEY" "$REGISTER_SECRET"
-
 	if [ "$REGISTER_ERROR" == "false" ]
 	then
 		echo "success"
+		echo "${REGISTER_KEY:-false}"
+		echo "${REGISTER_SECRET:-false}"
 		return
 	else
-		if [[ "$REGISTER_ERROR" == "82" ]]
+		if [[ "$REGISTER_ERROR" =~ "The email has already been taken" ]]
 		then
 			echo "email"
 			return
 		fi
 
-  		echo "> Unexpected error occured." >&2
-  		exit 77;
+		echo "> Unexpected error occured." >&2
+		exit 77;
 	fi
 }
 
@@ -1200,8 +1196,8 @@ function Hostname {
 	then
 		TestHostname
 	fi
-	
-	if [[ "$CMD" != "false" ]] 
+
+	if [[ "$CMD" != "false" ]]
 	then
 		if [ "$IP" == "" ]
 		then
@@ -1216,7 +1212,7 @@ function Hostname {
 
 	for I in 1 2 3
 	do
-		
+
 		if [ "$IP" == "" ]
 		then
 			echo "> Could not determine your hostname."
@@ -1232,15 +1228,15 @@ function Hostname {
 		fi
 
 		TestHostname
-		
+
 		if [[ "$IP" != "" ]] && [ "$IP" == "$EXTERNAL_IP" ]
-		then 
+		then
 			return;
 		fi
 	done
 
 	echo "> Could not determine hostname."  >&2
-  	exit 77;
+	exit 77;
 }
 
 function DetermineHostname {
@@ -1255,31 +1251,30 @@ function DetermineHostname {
 		# We actively check for these criteria
 		SERVER_EXISTS_RET=($(ApiServerExists "$HOSTNAME"))
 
-		SERVER_EXISTS=${SERVER_EXISTS_RET[0]}
-		SERVER_EXISTS_ERROR_TYPE=${SERVER_EXISTS_RET[1]}
-		SERVER_EXISTS_ERRORS=${SERVER_EXISTS_RET[2]}
+		SERVER_EXISTS_ERROR=${SERVER_EXISTS_RET[0]}
+		SERVER_EXISTS=${SERVER_EXISTS_RET[1]}
 
-		if [ "$SERVER_EXISTS_ERROR_TYPE" == "false" ]
+		if [ "$SERVER_EXISTS_ERROR" == "false" ]
 		then
 			return
 
 		# There is already an host from this user.
-		elif [ "$SERVER_EXISTS_ERROR_TYPE" == "1" ]
+		elif [ "$SERVER_EXISTS_ERROR" == "15" ]
 		then
 			echo "> An account was already created for this host or a subdomain of this host. Please login into your patrolserver.com account or add the key/secret when calling this command." >&2
 			Login
 
 		# Hostname could not be found.
-		elif [ "$SERVER_EXISTS_ERROR_TYPE" == "2" ]
+		elif [ "$SERVER_EXISTS_ERROR" == "83" ]
 		then
 			echo "> Your hostname ($HOSTNAME) doesn't resolve to this IP ($IP)." >&2
-	  		exit 77;
-	  	# Undefined error occured.
+			exit 77;
+		# Undefined error occured.
 		else
-	  		echo "> Unexpected error occured." >&2
-	  		exit 77;
+			echo "> Unexpected error occured." >&2
+			exit 77;
 		fi
-	fi	
+	fi
 }
 
 function Account {
@@ -1294,25 +1289,32 @@ function Account {
 	then
 		YN="n"
 	else
-		echo "> You can use this tool 5 times without account." 
+		echo "> You can use this tool 5 times without account."
 
 		YN="..."
 		while [[ "$YN" != "n" ]] && [[ $YN != "y" ]]; do
 			read -rp "> Do you want to create an account (y/n)? " YN
-	 	done
+		done
 	 fi
 
- 	if [ "$YN" == "n" ]
- 	then
+	if [ "$YN" == "n" ]
+	then
 		# Create account when no account exists.
 		EMAIL="tmp-$(Random)@$HOSTNAME"
 		PASSWORD=$(Random)
 
-		REGISTER_RET=$(Register "$EMAIL" "$PASSWORD")
-		if [ "$REGISTER_RET" != "success" ]
+		REGISTER_RET=($(Register "$EMAIL" "$PASSWORD"))
+
+		REGISTER_RET_STATUS=${REGISTER_RET[0]}
+
+		if [ "$REGISTER_RET_STATUS" != "success" ]
 		then
 			echo "> Internal error, could not create temporary account"
 			exit 77
+		else
+			REGISTER_RET_KEY=${REGISTER_RET[1]}
+			REGISTER_RET_SECRET=${REGISTER_RET[2]}
+			StoreKeySecret "$REGISTER_RET_KEY" "$REGISTER_RET_SECRET"
 		fi
 
 	else
@@ -1328,18 +1330,24 @@ function Account {
 			read -rs PASSWORD2
 			echo "";
 
-			REGISTER_RET=""
+			REGISTER_RET_STATUS=""
 			if [ "$PASSWORD" == "$PASSWORD2" ] && [ ${#PASSWORD} -ge 7 ]
 			then
-				REGISTER_RET=$(Register "$EMAIL" "$PASSWORD")
-				if [ "$REGISTER_RET" == "success" ]
+				REGISTER_RET=($(Register "$EMAIL" "$PASSWORD"))
+
+				REGISTER_RET_STATUS=${REGISTER_RET[0]}
+
+				if [ "$REGISTER_RET_STATUS" == "success" ]
 				then
+					REGISTER_RET_KEY=${REGISTER_RET[1]}
+					REGISTER_RET_SECRET=${REGISTER_RET[2]}
+					StoreKeySecret "$REGISTER_RET_KEY" "$REGISTER_RET_SECRET"
 					return
 				fi
 			fi
 
 			if [ ${#PASSWORD} -le 6 ]
-			then 
+			then
 				echo "> Password should minimal contain 6 characters" >&2
 			fi
 
@@ -1353,8 +1361,6 @@ function Account {
 				echo "> Account already exists with this account. Use command with email and password parameters." >&2
 				exit 77
 			fi
-
-
 		done
 
 		echo "> Account could not be created." >&2
@@ -1388,7 +1394,7 @@ function DetermineServer {
 
 		HAS_SERVER=$(echo "$SERVERS" | json | grep -P '^\[[0-9]*,"name"\]\t"'"$HOSTNAME"'"' -o)
 	fi
-	
+
 	if [ "$HAS_SERVER" == "" ]
 	then
 		echo "> Internal error, could not create the server online" >&2
@@ -1408,17 +1414,17 @@ function DetermineServer {
 
 		SERVER_VERIFY_RET=($(ApiVerifyServer "$KEY" "$SECRET" "$SERVER_ID" "$SERVER_TOKEN"))
 		SERVER_TOKEN_ERRORS=${SERVER_VERIFY_RET[0]}
-	fi	
+	fi
 }
 
 function Scan {
-	if [[ "$CMD" == "false" ]] 
+	if [[ "$CMD" == "false" ]]
 	then
 		echo "> Searching for packages, can take some time..."
 	fi
 
 	SOFTWARE=$(mktemp)
-	
+
 	# Update db
 	if ! command -v updatedb >/dev/null 2>&1 && command -v yum >/dev/null 2>&1
 	then
@@ -1436,40 +1442,40 @@ function Scan {
 	PhpmyadminSoftware
 	JoomlaSoftware
 	MagentoSoftware
-	
-	if [[ "$CMD" == "false" ]] 
+
+	if [[ "$CMD" == "false" ]]
 	then
-	 	echo "> Scanning for newest releases and exploits, can take serveral minutes..."
-	 	echo "> Take a coffee break ;) "
+		echo "> Scanning for newest releases and exploits, can take serveral minutes..."
+		echo "> Take a coffee break ;) "
 	fi
 
- 	SOFTWARE_PUST_RET=($(ApiServerPush "$KEY" "$SECRET" "$SERVER_ID" "$BUCKET" "$SOFTWARE"))
- 	SOFTWARE_PUST_ERRORS=${SOFTWARE_PUST_RET[0]}
+	SOFTWARE_PUST_RET=($(ApiServerPush "$KEY" "$SECRET" "$SERVER_ID" "$BUCKET" "$SOFTWARE"))
+	SOFTWARE_PUST_ERRORS=${SOFTWARE_PUST_RET[0]}
 
- 	if [ "$SOFTWARE_PUST_ERRORS" != "false" ]
- 	then
- 		echo "> Could not upload software data, please give our support team a call with the following details" >&2
- 		echo "$SOFTWARE_PUST_ERRORS" >&2
- 		exit 77
- 	fi
+	if [ "$SOFTWARE_PUST_ERRORS" != "false" ]
+	then
+		echo "> Could not upload software data, please give our support team a call with the following details" >&2
+		echo "$SOFTWARE_PUST_ERRORS" >&2
+		exit 77
+	fi
 
- 	SERVER_SCAN_RET=($(ApiServerScan "$KEY" "$SECRET" "$SERVER_ID"))
- 	SERVER_SCAN_ERRORS=${SERVER_SCAN_RET[0]}
+	SERVER_SCAN_RET=($(ApiServerScan "$KEY" "$SECRET" "$SERVER_ID"))
+	SERVER_SCAN_ERRORS=${SERVER_SCAN_RET[0]}
 
- 	if [ "$SERVER_SCAN_ERRORS" != "false" ]
- 	then
- 		echo "> Could not send scan command, please give our support team a call with the following details" >&2
- 		echo "$SERVER_SCAN_ERRORS" >&2
- 		exit 77
- 	fi
+	if [ "$SERVER_SCAN_ERRORS" != "false" ]
+	then
+		echo "> Could not send scan command, please give our support team a call with the following details" >&2
+		echo "$SERVER_SCAN_ERRORS" >&2
+		exit 77
+	fi
 
- 	SERVER_SCANNING="true"
- 	while [ "$SERVER_SCANNING" == "true" ] ; do
-	 	SERVER_SCANNING_RET=($(ApiServerIsScanning "$KEY" "$SECRET" "$SERVER_ID"))
-	 	SERVER_SCANNING_ERRORS=${SERVER_SCANNING_RET[0]}
+	SERVER_SCANNING="true"
+	while [ "$SERVER_SCANNING" == "true" ] ; do
+		SERVER_SCANNING_RET=($(ApiServerIsScanning "$KEY" "$SECRET" "$SERVER_ID"))
+		SERVER_SCANNING_ERRORS=${SERVER_SCANNING_RET[0]}
 		SERVER_SCANNING=${SERVER_SCANNING_RET[1]}
 
-		if [[ "$CMD" == "false" ]] 
+		if [[ "$CMD" == "false" ]]
 		then
 			echo -n "."
 		fi
@@ -1477,14 +1483,14 @@ function Scan {
 		sleep 5
 	done
 
-	if [[ "$CMD" == "false" ]] 
+	if [[ "$CMD" == "false" ]]
 	then
 		echo "";
 	fi
 }
 
 function Output {
-	if [[ "$CMD" == "false" ]] 
+	if [[ "$CMD" == "false" ]]
 	then
 		echo "> Software versions has been retrieved (Solutions for the exploits can be seen on our web interface):"
 	fi
@@ -1497,7 +1503,7 @@ function Output {
 	if [ "$SOFTWARE" == "" ]
 	then
 		echo -e "\tStrangely, No packages were found..."
-	fi 
+	fi
 
 	CORE_SOFTWARE=$(echo "$SOFTWARE" | grep '"parent":null' | grep '"location":"\\\/"')
 	OutputBlock "$SOFTWARE" "$CORE_SOFTWARE"
@@ -1536,7 +1542,7 @@ function OutputBlock {
 		# Print submodules
 		for LINE in $(echo "$SOFTWARE" | grep '"parent":"'"$CANONICAL_NAME_GREP"'"' | grep "location\":\"$LOCATION_GREP"); do
 			LINE=$(echo "$LINE" | json)
-			
+
 			echo -en "\t"
 			OutputLine "$LINE"
 		done
@@ -1572,7 +1578,7 @@ function OutputLine {
 		echo -n "$VERSION"
 		echo -ne "\e[0m"
 	elif [[ "$NEW_VERSION" != "" ]]
-    then
+	then
 		echo -ne "\e[0;33m"
 		echo -n "$VERSION"
 		echo -ne "\e[0m"
@@ -1593,7 +1599,7 @@ function OutputLine {
 		IS_BIGGER=$(echo "$EXPLOIT" | grep "^[5-9]")
 		if [ "$IS_BIGGER" == "1" ]
 		then
-			COUNT_EXPLOITS=$((COUNT_EXPLOITS+1)) 
+			COUNT_EXPLOITS=$((COUNT_EXPLOITS+1))
 		fi
 	done
 
@@ -1616,25 +1622,25 @@ function Cronjob {
 		return
 	fi
 
-	if [[ "$CMD" != "false" ]] 
+	if [[ "$CMD" != "false" ]]
 	then
 		return
 	fi
 
-	if [[ "$CRON" != "ask" ]] && [[ "$CRON" != "true" ]] 
+	if [[ "$CRON" != "ask" ]] && [[ "$CRON" != "true" ]]
 	then
 		return
 	fi
 
 	# Check if user want a cronjob
 	YN="..."
-	if [[ "$CRON" == "true" ]] 
+	if [[ "$CRON" == "true" ]]
 	then
-	 	YN="y"
+		YN="y"
 	fi
 	while [[ "$YN" != "n" ]] && [[ $YN != "y" ]]; do
 		read -rp "> It is advisable to check your server daily, should we set a cronjob (y/n)? " YN
- 	done
+	done
 
 	if [ "$YN" == "n" ]
 	then
@@ -1652,39 +1658,39 @@ function Cronjob {
 			echo ""
 
 			CHANGE_EMAIL_RET=($(ApiUserChange "$KEY" "$SECRET" "$REAL_EMAIL"))
-			CHANGE_EMAIL_ERRORS=${CHANGE_EMAIL_RET[0]}
-			CHANGE_EMAIL_SUCCESS=${CHANGE_EMAIL_RET[1]}
+			CHANGE_EMAIL_ERROR=${CHANGE_EMAIL_RET[0]}
+			CHANGE_EMAIL_USER=${CHANGE_EMAIL_RET[1]}
 
-			if [ "$CHANGE_EMAIL_SUCCESS" == "false" ]
+			if [ "$CHANGE_EMAIL_ERROR" != "false" ]
 			then
-			    if [[ $CHANGE_EMAIL_ERRORS =~ "The email has already been taken." ]] 
-			    then
-			        echo "> There is already an account with this emailadress, use this tool with email and password parameters." >&2
-				    exit 77
-			    fi
-			    
+				if [[ "$CHANGE_EMAIL_ERROR" == "82" ]]
+				then
+					echo "> There is already an account with this email address, use this tool with email and password parameters." >&2
+					exit 77
+				fi
+
 				echo "> Internal error when changing username" >&2
 				exit 77
 			fi
 		fi
 
 		mkdir ~/.patrolserver 2> /dev/null
-	    echo -e "HOSTNAME=$HOSTNAME\nKEY=$KEY\nSECRET=$SECRET" > ~/.patrolserver/env
-	    cat "$LOCATE" > ~/.patrolserver/locate.db
-	    wget -O ~/.patrolserver/patrolserver "https://raw.githubusercontent.com/PatrolServer/bashScanner/master/patrolserver" 2&>1 /dev/null
-	    chmod +x ~/.patrolserver/patrolserver
+		echo -e "HOSTNAME=$HOSTNAME\nKEY=$KEY\nSECRET=$SECRET" > ~/.patrolserver/env
+		cat "$LOCATE" > ~/.patrolserver/locate.db
+		wget -O ~/.patrolserver/patrolserver "https://raw.githubusercontent.com/PatrolServer/bashScanner/master/patrolserver" 2&>1 /dev/null
+		chmod +x ~/.patrolserver/patrolserver
 
-	    # Set cronjob
-	    CRON_TMP=$(mktemp)
+		# Set cronjob
+		CRON_TMP=$(mktemp)
 		crontab -l 2> /dev/null > "$CRON_TMP"
 		CRON_HOUR=$((RANDOM % 24))
 		CRON_MINUTE=$((RANDOM % 60))
 		echo "$CRON_MINUTE $CRON_HOUR * * * /bin/bash $HOME/.patrolserver/patrolserver --cmd --key=\"$KEY\" --secret=\"$SECRET\" --hostname=\"$HOSTNAME\" > /dev/null" >> $CRON_TMP
 		crontab "$CRON_TMP"
 
-	    echo "> cronjob was set."
+		echo "> cronjob was set."
 
-	    if [[ "$EMAIL" == tmp\-* ]]
+		if [[ "$EMAIL" == tmp\-* ]]
 		then
 			echo "> Your login on patrolserver.com:"
 			echo -e "\tlogin: $REAL_EMAIL"
